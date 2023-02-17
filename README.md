@@ -1,3 +1,5 @@
-# terraria-computer
-# terraria-computer
-# terraria-computer
+<h1 align="center">
+  <br />
+  Terraria Computer
+</h1>
+
