@@ -16,148 +16,153 @@ from riscof.pluginTemplate import pluginTemplate
 logger = logging.getLogger()
 
 class computerraria(pluginTemplate):
-    __model__ = "computerraria"
+  __model__ = "computerraria"
 
-    #TODO: please update the below to indicate family, version, etc of your DUT.
-    __version__ = "XXX"
+  #TODO: please update the below to indicate family, version, etc of your DUT.
+  __version__ = "XXX"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
 
-        config = kwargs.get('config')
+    config = kwargs.get('config')
 
-        # If the config node for this DUT is missing or empty. Raise an error. At minimum we need
-        # the paths to the ispec and pspec files
-        if config is None:
-            print("Please enter input file paths in configuration.")
-            raise SystemExit(1)
+    # If the config node for this DUT is missing or empty. Raise an error. At minimum we need
+    # the paths to the ispec and pspec files
+    if config is None:
+      print("Please enter input file paths in configuration.")
+      raise SystemExit(1)
 
-        self.dut_exe = os.path.join(config['PATH'] if 'PATH' in config else \
-                "~/.local/share/Steam/steamapps/common/tModLoader","start-tModLoaderServer.sh")
-      
-
-        self.num_jobs = str(config['jobs'] if 'jobs' in config else 1)
-
-        # Path to the directory where this python file is located. Collect it from the config.ini
-        self.pluginpath=os.path.abspath(config['pluginpath'])
-
-        # Collect the paths to the  riscv-config absed ISA and platform yaml files. One can choose
-        # to hardcode these here itself instead of picking it from the config.ini file.
-        self.isa_spec = os.path.abspath(config['ispec'])
-        self.platform_spec = os.path.abspath(config['pspec'])
-
-        # We capture if the user would like the run the tests on the target or
-        # not. If you are interested in just compiling the tests and not running
-        # them on the target, then following variable should be set to False
-        if 'target_run' in config and config['target_run']=='0':
-            self.target_run = False
-        else:
-            self.target_run = True
-
-    def initialise(self, suite, work_dir, archtest_env):
-
-       # capture the working directory. Any artifacts that the DUT creates should be placed in this
-       # directory. Other artifacts from the framework and the Reference plugin will also be placed
-       # here itself.
-       self.work_dir = work_dir
-
-       # capture the architectural test-suite directory.
-       self.suite_dir = suite
-
-       # Note the march is not hardwired here, because it will change for each
-       # test. Similarly the output elf name and compile macros will be assigned later in the
-       # runTests function
-       self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0} \
-         -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -g\
-         -T '+self.pluginpath+'/env/link.ld\
-         -I '+self.pluginpath+'/env/\
-         -I ' + archtest_env + ' {2} -o {3} {4}'
-
-       # add more utility snippets here
-
-    def build(self, isa_yaml, platform_yaml):
-
-      # load the isa yaml as a dictionary in python.
-      ispec = utils.load_yaml(isa_yaml)['hart0']
+    # self.dut_exe = os.path.join(config['PATH'] if 'PATH' in config else \
+    #                             "~/.local/share/Steam/steamapps/common/tModLoader","start-tModLoaderServer.sh")
+    self.dut_exe = os.path.join(config['PATH'] if 'PATH' in config else \
+                                "echo","start-tModLoaderServer.sh")
 
 
-      self.xlen = '32'
+    self.num_jobs = str(config['jobs'] if 'jobs' in config else 1)
 
-      self.isa = 'rv32I'
+    # Path to the directory where this python file is located. Collect it from the config.ini
+    self.pluginpath=os.path.abspath(config['pluginpath'])
 
-      self.compile_cmd = self.compile_cmd+' -mabi=ilp32'
+    # Collect the paths to the  riscv-config absed ISA and platform yaml files. One can choose
+    # to hardcode these here itself instead of picking it from the config.ini file.
+    self.isa_spec = os.path.abspath(config['ispec'])
+    self.platform_spec = os.path.abspath(config['pspec'])
 
-    def runTests(self, testList):
+    # We capture if the user would like the run the tests on the target or
+    # not. If you are interested in just compiling the tests and not running
+    # them on the target, then following variable should be set to False
+    if 'target_run' in config and config['target_run']=='0':
+      self.target_run = False
+    else:
+      self.target_run = True
 
-      # Delete Makefile if it already exists.
-      if os.path.exists(self.work_dir+ "/Makefile." + self.name[:-1]):
-            os.remove(self.work_dir+ "/Makefile." + self.name[:-1])
-      # create an instance the makeUtil class that we will use to create targets.
-      make = utils.makeUtil(makefilePath=os.path.join(self.work_dir, "Makefile." + self.name[:-1]))
+  def initialise(self, suite, work_dir, archtest_env):
 
-      # set the make command that will be used. The num_jobs parameter was set in the __init__
-      # function earlier
-      make.makeCommand = 'make -k -j' + self.num_jobs
+    # print("Initializing")
 
-      # we will iterate over each entry in the testList. Each entry node will be refered to by the
-      # variable testname.
-      for testname in testList:
+    # capture the working directory. Any artifacts that the DUT creates should be placed in this
+    # directory. Other artifacts from the framework and the Reference plugin will also be placed
+    # here itself.
+    self.work_dir = work_dir
 
-          # for each testname we get all its fields (as described by the testList format)
-          testentry = testList[testname]
+    # capture the architectural test-suite directory.
+    self.suite_dir = suite
 
-          # we capture the path to the assembly file of this test
-          test = testentry['test_path']
+    # Note the march is not hardwired here, because it will change for each
+    # test. Similarly the output elf name and compile macros will be assigned later in the
+    # runTests function
+    self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0} \
+      -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -g\
+      -T '+self.pluginpath+'/env/link.ld\
+      -I '+self.pluginpath+'/env/\
+      -I ' + archtest_env + ' {2} -o {3} {4}'
 
-          # capture the directory where the artifacts of this test will be dumped/created. RISCOF is
-          # going to look into this directory for the signature files
-          test_dir = testentry['work_dir']
+    # add more utility snippets here
 
-          # name of the elf file after compilation of the test
-          elf = 'my.elf'
+  def build(self, isa_yaml, platform_yaml):
 
-          # name of the signature file as per requirement of RISCOF. RISCOF expects the signature to
-          # be named as DUT-<dut-name>.signature. The below variable creates an absolute path of
-          # signature file.
-          sig_file = os.path.join(test_dir, self.name[:-1] + ".signature")
+    # load the isa yaml as a dictionary in python.
+    ispec = utils.load_yaml(isa_yaml)['hart0']
 
-          # for each test there are specific compile macros that need to be enabled. The macros in
-          # the testList node only contain the macros/values. For the gcc toolchain we need to
-          # prefix with "-D". The following does precisely that.
-          compile_macros= ' -D' + " -D".join(testentry['macros'])
 
-          # substitute all variables in the compile command that we created in the initialize
-          # function
-          cmd = self.compile_cmd.format(testentry['isa'].lower(), self.xlen, test, elf, compile_macros)
+    self.xlen = '32'
 
-	  # if the user wants to disable running the tests and only compile the tests, then
-	  # the "else" clause is executed below assigning the sim command to simple no action
-	  # echo statement.
-          if self.target_run:
-            # TODO: Change this to match terraria format
-            simcmd = self.dut_exe + ' --isa={0} +signature={1} +signature-granularity=4 {2}'.format(self.isa, sig_file, elf)
-          else:
-            simcmd = 'echo "NO RUN"'
+    self.isa = 'rv32I'
 
-          # concatenate all commands that need to be executed within a make-target.
-          execute = '@cd {0}; {1}; {2};'.format(testentry['work_dir'], cmd, simcmd)
+    self.compile_cmd = self.compile_cmd+' -mabi=ilp32'
 
-          # create a target. The makeutil will create a target with the name "TARGET<num>" where num
-          # starts from 0 and increments automatically for each new target that is added
-          make.add_target(execute)
+  def runTests(self, testList):
 
-      # if you would like to exit the framework once the makefile generation is complete uncomment the
-      # following line. Note this will prevent any signature checking or report generation.
-      #raise SystemExit
+    # Delete Makefile if it already exists.
+    if os.path.exists(self.work_dir+ "/Makefile." + self.name[:-1]):
+      os.remove(self.work_dir+ "/Makefile." + self.name[:-1])
+    # create an instance the makeUtil class that we will use to create targets.
+    make = utils.makeUtil(makefilePath=os.path.join(self.work_dir, "Makefile." + self.name[:-1]))
 
-      # once the make-targets are done and the makefile has been created, run all the targets in
-      # parallel using the make command set above.
-      make.execute_all(self.work_dir)
+    # set the make command that will be used. The num_jobs parameter was set in the __init__
+    # function earlier
+    make.makeCommand = 'make -k -j' + self.num_jobs
 
-      # if target runs are not required then we simply exit as this point after running all
-      # the makefile targets.
-      if not self.target_run:
-          raise SystemExit(0)
+    # we will iterate over each entry in the testList. Each entry node will be refered to by the
+    # variable testname.
+    for testname in testList:
+
+      # for each testname we get all its fields (as described by the testList format)
+      testentry = testList[testname]
+
+      # we capture the path to the assembly file of this test
+      test = testentry['test_path']
+
+      # capture the directory where the artifacts of this test will be dumped/created. RISCOF is
+      # going to look into this directory for the signature files
+      test_dir = testentry['work_dir']
+
+      # name of the elf file after compilation of the test
+      elf = 'my.elf'
+
+      # name of the signature file as per requirement of RISCOF. RISCOF expects the signature to
+      # be named as DUT-<dut-name>.signature. The below variable creates an absolute path of
+      # signature file.
+      sig_file = os.path.join(test_dir, self.name[:-1] + ".signature")
+
+      # for each test there are specific compile macros that need to be enabled. The macros in
+      # the testList node only contain the macros/values. For the gcc toolchain we need to
+      # prefix with "-D". The following does precisely that.
+      compile_macros= ' -D' + " -D".join(testentry['macros'])
+
+      # substitute all variables in the compile command that we created in the initialize
+      # function
+      cmd = self.compile_cmd.format(testentry['isa'].lower(), self.xlen, test, elf, compile_macros)
+      # print(f"cmd: {cmd}")
+
+      # if the user wants to disable running the tests and only compile the tests, then
+      # the "else" clause is executed below assigning the sim command to simple no action
+      # echo statement.
+      if self.target_run:
+        # TODO: Change this to match terraria format
+        simcmd = self.dut_exe + ' --isa={0} +signature={1} +signature-granularity=4 {2}'.format(self.isa, sig_file, elf)
+      else:
+        simcmd = 'echo "NO RUN"'
+
+      # concatenate all commands that need to be executed within a make-target.
+      execute = '@cd {0}; {1}; {2};'.format(testentry['work_dir'], cmd, simcmd)
+
+      # create a target. The makeutil will create a target with the name "TARGET<num>" where num
+      # starts from 0 and increments automatically for each new target that is added
+      make.add_target(execute)
+
+    # if you would like to exit the framework once the makefile generation is complete uncomment the
+    # following line. Note this will prevent any signature checking or report generation.
+    #raise SystemExit
+
+    # once the make-targets are done and the makefile has been created, run all the targets in
+    # parallel using the make command set above.
+    make.execute_all(self.work_dir)
+
+    # if target runs are not required then we simply exit as this point after running all
+    # the makefile targets.
+    if not self.target_run:
+      raise SystemExit(0)
 
 #The following is an alternate template that can be used instead of the above.
 #The following template only uses shell commands to compile and run the tests.
