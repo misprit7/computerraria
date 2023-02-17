@@ -32,15 +32,10 @@ class computerraria(pluginTemplate):
             print("Please enter input file paths in configuration.")
             raise SystemExit(1)
 
-        # In case of an RTL based DUT, this would be point to the final binary executable of your
-        # test-bench produced by a simulator (like verilator, vcs, incisive, etc). In case of an iss or
-        # emulator, this variable could point to where the iss binary is located. If 'PATH variable
-        # is missing in the config.ini we can hardcode the alternate here.
-        self.dut_exe = os.path.join(config['PATH'] if 'PATH' in config else "","computerraria")
+        self.dut_exe = os.path.join(config['PATH'] if 'PATH' in config else \
+                "~/.local/share/Steam/steamapps/common/tModLoader","start-tModLoaderServer.sh")
+      
 
-        # Number of parallel jobs that can be spawned off by RISCOF
-        # for various actions performed in later functions, specifically to run the tests in
-        # parallel on the DUT executable. Can also be used in the build function if required.
         self.num_jobs = str(config['jobs'] if 'jobs' in config else 1)
 
         # Path to the directory where this python file is located. Collect it from the config.ini
@@ -51,9 +46,9 @@ class computerraria(pluginTemplate):
         self.isa_spec = os.path.abspath(config['ispec'])
         self.platform_spec = os.path.abspath(config['pspec'])
 
-        #We capture if the user would like the run the tests on the target or
-        #not. If you are interested in just compiling the tests and not running
-        #them on the target, then following variable should be set to False
+        # We capture if the user would like the run the tests on the target or
+        # not. If you are interested in just compiling the tests and not running
+        # them on the target, then following variable should be set to False
         if 'target_run' in config and config['target_run']=='0':
             self.target_run = False
         else:
@@ -85,27 +80,12 @@ class computerraria(pluginTemplate):
       # load the isa yaml as a dictionary in python.
       ispec = utils.load_yaml(isa_yaml)['hart0']
 
-      # capture the XLEN value by picking the max value in 'supported_xlen' field of isa yaml. This
-      # will be useful in setting integer value in the compiler string (if not already hardcoded);
-      self.xlen = ('64' if 64 in ispec['supported_xlen'] else '32')
 
-      # for computerraria start building the '--isa' argument. the self.isa is dutnmae specific and may not be
-      # useful for all DUTs
-      self.isa = 'rv' + self.xlen
-      if "I" in ispec["ISA"]:
-          self.isa += 'i'
-      if "M" in ispec["ISA"]:
-          self.isa += 'm'
-      if "F" in ispec["ISA"]:
-          self.isa += 'f'
-      if "D" in ispec["ISA"]:
-          self.isa += 'd'
-      if "C" in ispec["ISA"]:
-          self.isa += 'c'
+      self.xlen = '32'
 
-      #TODO: The following assumes you are using the riscv-gcc toolchain. If
-      #      not please change appropriately
-      self.compile_cmd = self.compile_cmd+' -mabi='+('lp64 ' if 64 in ispec['supported_xlen'] else 'ilp32 ')
+      self.isa = 'rv32I'
+
+      self.compile_cmd = self.compile_cmd+' -mabi=ilp32'
 
     def runTests(self, testList):
 
@@ -154,7 +134,7 @@ class computerraria(pluginTemplate):
 	  # the "else" clause is executed below assigning the sim command to simple no action
 	  # echo statement.
           if self.target_run:
-            # set up the simulation command. Template is for spike. Please change.
+            # TODO: Change this to match terraria format
             simcmd = self.dut_exe + ' --isa={0} +signature={1} +signature-granularity=4 {2}'.format(self.isa, sig_file, elf)
           else:
             simcmd = 'echo "NO RUN"'
