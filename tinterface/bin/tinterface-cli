@@ -1,4 +1,22 @@
 #!/usr/bin/python3
 
-print("hello world")
+import argparse
+import tinterface
+
+parser = argparse.ArgumentParser(
+    prog = 'tinterfacecli',
+    description = 'A command line interface to interact with terraria server for computerraria',
+)
+
+parser.add_argument(
+    '-p',
+    '--path',
+    type=str,
+    help='path to Terraria server executable',
+    default='~/.local/share/Steam/steamapps/common/tModLoader/start-tModLoaderServer.sh'
+)
+
+args = parser.parse_args()
+
+tinterface.test()
 
