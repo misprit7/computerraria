@@ -1,6 +1,6 @@
 from subprocess import Popen, run, PIPE
 from pathlib import Path
-import os, shutil, time
+import os, shutil, time, select, sys
 
 # pyright complains about stdin/stdout otherwise
 # pyright: reportOptionalMemberAccess=false
@@ -23,7 +23,7 @@ class TServer:
 
     def __init__(
         self, 
-        path='~/.local/share/Steam/steamapps/common/tModLoader/start-tModLoaderServer.sh',
+        path='~/.local/share/Steam/steamapps/common/tModLoader/LaunchUtils/ScriptCaller.sh',
         world=os.path.join(os.path.dirname(__file__), '../../computer.wld'),
         port=7777,
         inplace=False,
@@ -39,15 +39,32 @@ class TServer:
         if not self.inplace:
             self.world = shutil.copy(self.world, '/tmp/')
 
-    def start(self):
+    def clear_stdout(self):
+        """Clears self.process.stdout"""
+        assert(self.running())
+        # This is stupidly complicated for something so simple: 
+        # https://repolinux.wordpress.com/2012/10/09/non-blocking-read-from-stdin-in-python/
+        while self.process.stdout in select.select([self.process.stdout], [], [], 0)[0]:
+            self.process.stdout.readline()
+
+    def write_stdin(self, s: str):
+        self.process.stdin.write(str.encode(s + '\n'))
+        self.process.stdin.flush()
+
+    def start(self, verbose=False):
         """Starts the server, blocks until fully open"""
-        self.process = Popen([
+        command = [
             self.path, 
-            '-nosteam',
-            f'-port {self.port}',
-            f'-players 1',
-            f'-world {self.world}',
-         ], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            '-server',
+            '-port',
+            str(self.port),
+            '-players',
+            '1',
+            '-world',
+            self.world,
+         ]
+        if verbose: print(command)
+        self.process = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=1, text=True)
 
         assert(self.process.stdin is not None)
         assert(self.process.stdout is not None)
@@ -55,8 +72,14 @@ class TServer:
 
         print('Started server, waiting for completion')
         # This block indefinitely if something fails, should probably have a timeout or something
-        while self.process.stdout.readline() != b'Server started\n': pass
-        self.process.stdin.write(b'init\n')
+        line = self.process.stdout.readline()
+        while line != b'Server started\n':
+            if verbose and line != b'':
+                print(line)
+            line = self.process.stdout.readline()
+
+
+        self.write_stdin('init')
         print('Server started successfully')
 
     def stop(self):
@@ -65,7 +88,7 @@ class TServer:
         if not self.inplace and Path(self.world).parts[1] == 'tmp':
             os.remove(self.world)
         if self.process is not None:
-            self.process.stdin.write(b'exit\n') 
+            self.write_stdin('exit') 
             while self.running(): time.sleep(0.1)
 
     def running(self) -> bool:
@@ -75,9 +98,9 @@ class TServer:
     def config(self, config_x, config_y):
         """Sets config of the world for mass reads/writes"""
         assert(self.running())
-        self.process.stdin.write(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}\n')
+        self.write_stdin(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
 
-    def write(self, file: str):
+    def write_bin(self, file: str):
         """Writes given file to the world, if given an elf it will convert to bin in place"""
         assert(self.running())
         f, ext = os.path.splitext(file)
@@ -89,7 +112,34 @@ class TServer:
         if ext == '.bin' or ext == '.elf':
             # Required specification for WiringUtils
             run(['hexdump', '-ve', '1/1 "%.2x "', binfile, '>', txtfile], check = True)
-        self.process.stdin.write(f'bin write {txtfile}')
+        self.write_stdin(f'bin write {txtfile}')
+
+    def read_bin(self, file: str, force=False):
+        """Reads world bin into a file"""
+        assert(self.running())
+        _, ext = os.path.splitext(file)
+        if not force:
+            # Unless forced make sure you don't overwrite a non txt file
+            assert(ext == '.txt')
+        self.write_stdin(f'bin read {file}')
+
+    def write(self, x: int, y: int, val: bool):
+        assert(self.running())
+        self.write_stdin(f'write {x} {y} {1 if val else 0}')
+
+    def read(self, x: int, y: int) -> bool:
+        assert(self.running())
+        self.clear_stdout()
+        self.write_stdin(f'read {x} {y}')
+        l = self.process.stdout.readline()
+        # Format: ': 1\n' or ': 0\n'
+        c = l[2]
+        if c == b'1': return True
+        elif c == b'0': return False
+        else: raise ValueError('Read returned neither 0 nor 1')
+
+        
+
 
 
 
