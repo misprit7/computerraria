@@ -1,6 +1,7 @@
-from subprocess import Popen, run, PIPE
 from pathlib import Path
-import os, shutil, time, select, sys
+import os, shutil, time
+from typing import Tuple
+import pexpect
 
 # pyright complains about stdin/stdout otherwise
 # pyright: reportOptionalMemberAccess=false
@@ -18,6 +19,9 @@ class LoadConfig:
     def to_str(self):
         return f'{self.offset}+{self.cell_width}g{self.cell_gap}x{self.cells}g{self.bank_gap}x{self.banks}'
 
+    def end(self) -> int:
+        return self.offset + self.cell_gap * self.cells * self.banks + self.bank_gap * (self.banks - 1)
+
 class TServer:
     """A class representing a terraria server instance"""
 
@@ -31,25 +35,23 @@ class TServer:
         self.path = str(Path(path).expanduser())
         self.port = port
         self.world = world
-        self.process: Popen | None = None
+        self.process: pexpect.spawn|None = None
+        self.inplace = inplace
+
+        # World specific config
         self.config_x = LoadConfig(814, 2, 3, 1024, 3361, 2)
         self.config_y = LoadConfig(1377, 1, 4, 32, 0, 1)
-        self.inplace = inplace
+        self.triggers = {
+            'dummy': (3965, 1100),
+            'clk': (3969, 1114),
+            'reset': (3966, 1112),
+            'zdb': (4011, 1182),
+            'zmem': (3962, 1330),
+            'lpc': (3966, 1154),
+        }
 
         if not self.inplace:
             self.world = shutil.copy(self.world, '/tmp/')
-
-    def clear_stdout(self):
-        """Clears self.process.stdout"""
-        assert(self.running())
-        # This is stupidly complicated for something so simple: 
-        # https://repolinux.wordpress.com/2012/10/09/non-blocking-read-from-stdin-in-python/
-        while self.process.stdout in select.select([self.process.stdout], [], [], 0)[0]:
-            self.process.stdout.readline()
-
-    def write_stdin(self, s: str):
-        self.process.stdin.write(str.encode(s + '\n'))
-        self.process.stdin.flush()
 
     def start(self, verbose=False):
         """Starts the server, blocks until fully open"""
@@ -62,25 +64,16 @@ class TServer:
             '1',
             '-world',
             self.world,
-         ]
+        ]
         if verbose: print(command)
-        self.process = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=1, text=True)
+        self.process = pexpect.spawn(' '.join(command))
 
-        assert(self.process.stdin is not None)
-        assert(self.process.stdout is not None)
-        assert(self.process.stderr is not None)
-
-        print('Started server, waiting for completion')
-        # This block indefinitely if something fails, should probably have a timeout or something
-        line = self.process.stdout.readline()
-        while line != b'Server started\n':
-            if verbose and line != b'':
-                print(line)
-            line = self.process.stdout.readline()
-
-
-        self.write_stdin('init')
-        print('Server started successfully')
+        if verbose: print('Started server, waiting for completion')
+        self.process.expect('Server started')
+        time.sleep(0.2)
+        self.process.sendline('init')
+        time.sleep(0.2)
+        if verbose: print('Server started successfully')
 
     def stop(self):
         """Stops the server and cleans up"""
@@ -88,31 +81,35 @@ class TServer:
         if not self.inplace and Path(self.world).parts[1] == 'tmp':
             os.remove(self.world)
         if self.process is not None:
-            self.write_stdin('exit') 
+            self.process.sendline('exit')
             while self.running(): time.sleep(0.1)
 
     def running(self) -> bool:
-        return self.process is not None and self.process.poll() is None
+        return self.process is not None and self.process.isalive()
             
+    ###########################################################################
+    # Low level wrappers around mod commands
+    ###########################################################################
 
     def config(self, config_x, config_y):
         """Sets config of the world for mass reads/writes"""
         assert(self.running())
-        self.write_stdin(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
+        self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
 
     def write_bin(self, file: str):
         """Writes given file to the world, if given an elf it will convert to bin in place"""
         assert(self.running())
         f, ext = os.path.splitext(file)
-        assert(ext == '.bin' or ext == '.elf' or ext == '.bin')
+        assert(ext == '.bin' or ext == '.elf' or ext == '.txt')
         binfile = f + '.bin'
         txtfile = f + '.txt'
         if ext == '.elf':
-            run(['riscv32-unknown-elf-objdump', '-O', 'binary', file, binfile], check = True)
+            pexpect.run(f'riscv32-unknown-elf-objdump -O binary {file} {binfile}')
         if ext == '.bin' or ext == '.elf':
             # Required specification for WiringUtils
-            run(['hexdump', '-ve', '1/1 "%.2x "', binfile, '>', txtfile], check = True)
-        self.write_stdin(f'bin write {txtfile}')
+            with open(txtfile, 'w') as f:
+                f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8'))
+        self.process.sendline(f'bin write {txtfile}')
 
     def read_bin(self, file: str, force=False):
         """Reads world bin into a file"""
@@ -121,22 +118,70 @@ class TServer:
         if not force:
             # Unless forced make sure you don't overwrite a non txt file
             assert(ext == '.txt')
-        self.write_stdin(f'bin read {file}')
+        self.process.sendline(f'bin read {file}')
 
-    def write(self, x: int, y: int, val: bool):
+    def write(self, coord: Tuple[int, int], val: bool):
+        """Writes a specific tile to the world"""
         assert(self.running())
-        self.write_stdin(f'write {x} {y} {1 if val else 0}')
+        x, y = coord
+        self.process.sendline(f'write {x} {y} {1 if val else 0}')
 
-    def read(self, x: int, y: int) -> bool:
+    def read(self, coord: Tuple[int, int]) -> bool:
+        """Reads a specific tile from the world"""
         assert(self.running())
-        self.clear_stdout()
-        self.write_stdin(f'read {x} {y}')
-        l = self.process.stdout.readline()
-        # Format: ': 1\n' or ': 0\n'
-        c = l[2]
-        if c == b'1': return True
-        elif c == b'0': return False
+        x, y = coord
+        self.process.sendline(f'read {x} {y}')
+        self.process.expect(': (?P<val>[0|1])')
+        b = int(self.process.match.group('val'))
+        if b == 1: return True
+        elif b == 0: return False
         else: raise ValueError('Read returned neither 0 nor 1')
+
+    def trigger(self, coord: Tuple[int, int]):
+        """Triggers a specific tile in the world"""
+        assert(self.running())
+        x, y = coord
+        self.process.sendline(f'trigger {x} {y}')
+
+    ###########################################################################
+    # Higher level functions specific to computerraria
+    ###########################################################################
+
+    def reset_state(self):
+        """Resets all state of the computer to a blank slate except ram"""
+        assert(self.running())
+        self.trigger(self.triggers['zdb'])
+        self.trigger(self.triggers['zmem'])
+
+    def write_zeros(self):
+        """Writes all zeros to memory"""
+        assert(self.running())
+        # Touch empty file
+        empty = '/tmp/empty.txt'
+        with open(empty, 'w') as _: pass
+        self.write_bin(empty)
+
+    
+    def run(self, prog_file: str, out_file: str):
+        """Runs prog_file and returns output to out_file"""
+        assert(self.running())
+        self.reset_state()
+        self.write_bin(prog_file)
+        self.trigger(self.triggers['dummy'])
+
+        monitor = (self.config_x.end(), self.config_y.end())
+        t_start = time.time()
+        while not self.read(monitor):
+            time.sleep(0.2)
+            if time.time() - t_start > 20:
+                self.trigger(self.triggers['dummy'])
+                raise TimeoutError('Program timed out while executing')
+
+        self.trigger(self.triggers['dummy'])
+        self.reset_state()
+        self.read_bin(out_file)
+
+
 
         
 
