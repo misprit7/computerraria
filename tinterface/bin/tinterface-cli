@@ -3,6 +3,8 @@
 import argparse
 import tinterface
 
+# pyright: reportOptionalMemberAccess=false
+
 parser = argparse.ArgumentParser(
     prog = 'tinterfacecli',
     description = 'A command line interface to interact with terraria server for computerraria',
@@ -13,10 +15,55 @@ parser.add_argument(
     '--path',
     type=str,
     help='path to Terraria server executable',
-    default='~/.local/share/Steam/steamapps/common/tModLoader/start-tModLoaderServer.sh'
 )
+parser.add_argument(
+    '-w',
+    '--world',
+    type=str,
+    help='path to .wld world file',
+)
+parser.add_argument(
+    '-r',
+    '--run',
+    type=str,
+    help='run the given program and write the results to the output file',
+)
+parser.add_argument(
+    '-o',
+    '--output',
+    type=str,
+    help='output file of run',
+)
+parser.add_argument(
+    '-t',
+    '--time',
+    type=int,
+    help='time to give for program to run',
+    default=20
+)
+parser.add_argument(
+    '-i',
+    '--interactive',
+    action='store_true',
+    help='leave the server in interactive mode after other operations finish',
+)
+
+    
 
 args = parser.parse_args()
 
-tinterface.test()
+t = tinterface.TServer(path=args.path, world=args.world)
+t.start(verbose=True)
+
+if args.run is not None:
+    try:
+        t.run(args.run, args.output, run_time=args.time)
+    except Exception as e:
+        print(e)
+        print('An error occured, starting interactive mode to let you debug')
+        args.interactive = True
+
+if args.interactive:
+    t.process.interact()
+
 
