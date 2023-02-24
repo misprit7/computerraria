@@ -3,8 +3,12 @@ import os, shutil, time
 from typing import Tuple
 import pexpect
 
-# pyright complains about stdin/stdout otherwise
+# pyright complains a bunch otherwise since pexpect isn't typed
 # pyright: reportOptionalMemberAccess=false
+
+TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').expanduser()) + '/'
+COMPUTERRARIA_DIR = os.path.join(os.path.dirname(__file__), '../../')
+TMP_DIR = '/tmp/'
 
 class LoadConfig:
     """A representation of the world config for WiringUtils"""
@@ -20,40 +24,47 @@ class LoadConfig:
         return f'{self.offset}+{self.cell_width}g{self.cell_gap}x{self.cells}g{self.bank_gap}x{self.banks}'
 
     def end(self) -> int:
-        return self.offset + self.cell_gap * self.cells * self.banks + self.bank_gap * (self.banks - 1)
+        return self.offset + self.cell_gap * (self.cells-1) + self.bank_gap * (self.banks - 1)
 
 class TServer:
     """A class representing a terraria server instance"""
 
     def __init__(
         self, 
-        path='~/.local/share/Steam/steamapps/common/tModLoader/LaunchUtils/ScriptCaller.sh',
-        world=os.path.join(os.path.dirname(__file__), '../../computer.wld'),
+        path=None,
+        world=None,
         port=7777,
         inplace=False,
+        verbose=True,
     ):
-        self.path = str(Path(path).expanduser())
+        self.path = TMODLOADER_DIR + 'LaunchUtils/ScriptCaller.sh' if path is None else path
+        self.world = COMPUTERRARIA_DIR + 'computer.wld' if world is None else world
         self.port = port
-        self.world = world
-        self.process: pexpect.spawn|None = None
         self.inplace = inplace
 
+        self.process: pexpect.spawn|None = None
+
         # World specific config
+        # Most of the random literal numbers should be here
         self.config_x = LoadConfig(814, 2, 3, 1024, 3361, 2)
         self.config_y = LoadConfig(1377, 1, 4, 32, 0, 1)
         self.triggers = {
-            'dummy': (3965, 1100),
-            'clk': (3969, 1114),
-            'reset': (3966, 1112),
-            'zdb': (4011, 1182),
-            'zmem': (3962, 1330),
-            'lpc': (3966, 1154),
+            'dummy': (3965, 1100), # dummy clock
+            'clk': (3969, 1114), # manual clock
+            'reset': (3966, 1112), # reset
+            'zdb': (4011, 1182), # zero data bus
+            'zmem': (3962, 1330), # zero memory select
+            'lpc': (3966, 1154), # load pc
+            'rst': (3966, 1112), # resets clock
+        }
+        self.tiles = {
+            'inexec': (3967, 1112), # while in execution
         }
 
         if not self.inplace:
-            self.world = shutil.copy(self.world, '/tmp/')
+            self.world = shutil.copy(self.world, TMP_DIR)
 
-    def start(self, verbose=False):
+    def start(self):
         """Starts the server, blocks until fully open"""
         command = [
             self.path, 
@@ -65,15 +76,15 @@ class TServer:
             '-world',
             self.world,
         ]
-        if verbose: print(command)
+        if self.verbose: print(command)
         self.process = pexpect.spawn(' '.join(command))
 
-        if verbose: print('Started server, waiting for completion')
+        if self.verbose: print('Started server, waiting for completion')
         self.process.expect('Server started')
         time.sleep(0.2)
         self.process.sendline('init')
         time.sleep(0.2)
-        if verbose: print('Server started successfully')
+        if self.verbose: print('Server started successfully')
 
     def stop(self):
         """Stops the server and cleans up"""
@@ -82,7 +93,7 @@ class TServer:
             os.remove(self.world)
         if self.process is not None:
             self.process.sendline('exit')
-            while self.running(): time.sleep(0.1)
+            self.process.wait()
 
     def running(self) -> bool:
         return self.process is not None and self.process.isalive()
@@ -129,9 +140,13 @@ class TServer:
     def read(self, coord: Tuple[int, int]) -> bool:
         """Reads a specific tile from the world"""
         assert(self.running())
+
         x, y = coord
         self.process.sendline(f'read {x} {y}')
-        self.process.expect(': (?P<val>[0|1])')
+        self.process.expect(': (?P<val>[0|1])\r\n')
+
+        if self.process.match is None: 
+            raise ValueError('Read returned neither 0 nor 1')
         b = int(self.process.match.group('val'))
         if b == 1: return True
         elif b == 0: return False
@@ -150,32 +165,49 @@ class TServer:
     def reset_state(self):
         """Resets all state of the computer to a blank slate except ram"""
         assert(self.running())
+
+        tries = 0
+        # Prevent trying to reset state while in the middle of execution
+        while not self.read(self.tiles['inexec']):
+            self.trigger(self.triggers['clk'])
+            tries += 1
+            # Most clock cycles of an instructions is 3
+            if tries >= 3: 
+                print('Unable to break out of execution with clk, resetting...')
+                self.trigger(self.triggers['rst'])
+                break
+            # Make sure io isn't faster than fps
+            time.sleep(0.2)
+        
         self.trigger(self.triggers['zdb'])
         self.trigger(self.triggers['zmem'])
+        self.trigger(self.triggers['lpc'])
 
     def write_zeros(self):
         """Writes all zeros to memory"""
         assert(self.running())
         # Touch empty file
-        empty = '/tmp/empty.txt'
+        empty = TMP_DIR + 'empty.txt'
         with open(empty, 'w') as _: pass
         self.write_bin(empty)
 
     
-    def run(self, prog_file: str, out_file: str):
+    def run(self, prog_file: str, out_file: str, run_time=20):
         """Runs prog_file and returns output to out_file"""
         assert(self.running())
         self.reset_state()
         self.write_bin(prog_file)
         self.trigger(self.triggers['dummy'])
 
-        monitor = (self.config_x.end(), self.config_y.end())
-        t_start = time.time()
-        while not self.read(monitor):
-            time.sleep(0.2)
-            if time.time() - t_start > 20:
-                self.trigger(self.triggers['dummy'])
-                raise TimeoutError('Program timed out while executing')
+        # monitor = (self.config_x.end(), self.config_y.end())
+        # t_start = time.time()
+        # while not self.read(monitor):
+        #     time.sleep(0.2)
+        #     if time.time() - t_start > 20:
+        #         self.trigger(self.triggers['dummy'])
+        #         raise TimeoutError('Program timed out while executing')
+
+        time.sleep(run_time)
 
         self.trigger(self.triggers['dummy'])
         self.reset_state()
