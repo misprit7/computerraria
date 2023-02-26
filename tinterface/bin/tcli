@@ -52,8 +52,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-t = tinterface.TServer(path=args.path, world=args.world)
-t.start(verbose=True)
+t = tinterface.TServer(path=args.path, world=args.world, verbose=True)
+t.start()
 
 if args.run is not None:
     try:

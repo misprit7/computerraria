@@ -3,7 +3,7 @@ import os, shutil, time
 from typing import Tuple
 import pexpect
 
-# pyright complains a bunch otherwise since pexpect isn't typed
+#aaa pyright complains a bunch otherwise since pexpect isn't typed
 # pyright: reportOptionalMemberAccess=false
 
 TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').expanduser()) + '/'
@@ -35,30 +35,31 @@ class TServer:
         world=None,
         port=7777,
         inplace=False,
-        verbose=True,
+        verbose=False,
     ):
         self.path = TMODLOADER_DIR + 'LaunchUtils/ScriptCaller.sh' if path is None else path
         self.world = COMPUTERRARIA_DIR + 'computer.wld' if world is None else world
         self.port = port
         self.inplace = inplace
+        self.verbose = verbose
 
         self.process: pexpect.spawn|None = None
 
         # World specific config
         # Most of the random literal numbers should be here
-        self.config_x = LoadConfig(814, 2, 3, 1024, 3361, 2)
-        self.config_y = LoadConfig(1377, 1, 4, 32, 0, 1)
+        self.config_x = LoadConfig(46, 2, 3, 1024, 3185, 2)
+        self.config_y = LoadConfig(421, 1, 4, 32, 156, 12)
         self.triggers = {
-            'dummy': (3965, 1100), # dummy clock
-            'clk': (3969, 1114), # manual clock
-            'reset': (3966, 1112), # reset
-            'zdb': (4011, 1182), # zero data bus
-            'zmem': (3962, 1330), # zero memory select
-            'lpc': (3966, 1154), # load pc
-            'rst': (3966, 1112), # resets clock
+            'dummy': (3197, 144), # dummy clock
+            'clk': (3201, 158), # manual clock
+            'reset': (3198, 156), # reset
+            'zdb': (3243, 226), # zero data bus
+            'zmem': (3250, 374), # zero memory select
+            'lpc': (3198, 198), # store pc
+            'rst': (3198, 156), # resets clock
         }
         self.tiles = {
-            'inexec': (3967, 1112), # while in execution
+            'inexec': (3199, 156), # while in execution
         }
 
         if not self.inplace:
@@ -83,6 +84,8 @@ class TServer:
         self.process.expect('Server started')
         time.sleep(0.2)
         self.process.sendline('init')
+        time.sleep(0.2)
+        self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
         time.sleep(0.2)
         if self.verbose: print('Server started successfully')
 
@@ -173,7 +176,8 @@ class TServer:
             tries += 1
             # Most clock cycles of an instructions is 3
             if tries >= 3: 
-                print('Unable to break out of execution with clk, resetting...')
+                if self.verbose:
+                    print('Unable to break out of execution with clk, resetting...')
                 self.trigger(self.triggers['rst'])
                 break
             # Make sure io isn't faster than fps

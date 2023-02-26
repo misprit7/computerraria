@@ -10,5 +10,5 @@ setup(
     license='MIT',
     packages=['tinterface'],
     zip_safe=False,
-    scripts=['bin/tinterface-cli'],
+    scripts=['bin/tcli'],
 )
