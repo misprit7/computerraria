@@ -29,7 +29,7 @@ fn main() {
     let _z = unsafe { &DATA };
     unsafe {
         // let (mut a, mut b) = (1, 1);
-        let ptr: *mut u8 = 0b10000 as *mut u8;
+        let ptr: *mut u8 = 0x1100 as *mut u8;
 
         loop {
             (B, A) = (A, A+B);

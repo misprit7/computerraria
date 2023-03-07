@@ -118,10 +118,11 @@ class TServer:
         binfile = f + '.bin'
         txtfile = f + '.txt'
         if ext == '.elf':
-            pexpect.run(f'riscv32-unknown-elf-objdump -O binary {file} {binfile}')
+            pexpect.run(f'riscv32-unknown-elf-objcopy -O binary {file} {binfile}')
         if ext == '.bin' or ext == '.elf':
             # Required specification for WiringUtils
             with open(txtfile, 'w') as f:
+                # hexdump -ve '1/1 "%.2x "'
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8'))
         self.process.sendline(f'bin write {txtfile}')
 
