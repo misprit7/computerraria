@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "riscv"
+name = "tdriver"
 version = "0.1.0"
