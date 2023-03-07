@@ -5,7 +5,7 @@ edition = "2021"
 
 [profile.dev]
 panic = "abort"
-# opt-level = "z"
+opt-level = "z"
 # strip="symbols"
 
 [profile.release]
