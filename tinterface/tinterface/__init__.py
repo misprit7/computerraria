@@ -122,7 +122,8 @@ class TServer:
         if ext == '.bin' or ext == '.elf':
             # Required specification for WiringUtils
             with open(txtfile, 'w') as f:
-                # hexdump -ve '1/1 "%.2x "'
+                # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
+                
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8'))
         self.process.sendline(f'bin write {txtfile}')
 
