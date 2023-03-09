@@ -3,9 +3,6 @@ import os, shutil, time
 from typing import Tuple
 import pexpect
 
-#aaa pyright complains a bunch otherwise since pexpect isn't typed
-# pyright: reportOptionalMemberAccess=false
-
 TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').expanduser()) + '/'
 COMPUTERRARIA_DIR = os.path.join(os.path.dirname(__file__), '../../')
 TMP_DIR = '/tmp/'
@@ -22,12 +19,13 @@ def gen_signature(txt_file: str, sig_file: str, offset: int):
     sig_file: signature file to write to, compliant with riscof specs
     offset: offset in ram to read from
     """
-    with open(txt_file, 'r') as txt, open(sig_file) as sig:
+    with open(txt_file, 'r') as txt, open(sig_file, 'w') as sig:
         bytes = txt.read().split()[offset:]
         # This technically isn't robust if the start/end signature ends with 00
         while bytes[-1] == '00': bytes.pop()
         for i in range(0, len(bytes), 4):
-            sig.write(''.join(bytes[i:i+4]))
+            # Reverse since roman numbers are big endian while we're little endian
+            sig.write(''.join(bytes[i:i+4][::-1]))
             sig.write('\n')
 
 ###########################################################################
@@ -51,7 +49,14 @@ class LoadConfig:
         return self.offset + self.cell_gap * (self.cells-1) + self.bank_gap * (self.banks - 1)
 
 class TServer:
-    """A class representing a terraria server instance"""
+    """
+    A class representing a terraria server instance
+
+    Methods should block until execution of command is finished
+
+    Useful tips: 
+    - Use tserver.process.interact() to debug server, ctrl+] to exit back to python
+    """
 
     def __init__(
         self, 
@@ -66,8 +71,6 @@ class TServer:
         self.port = port
         self.inplace = inplace
         self.verbose = verbose
-
-        self.process: pexpect.spawn|None = None
 
         # World specific config
         # Most of the random literal numbers should be here
@@ -103,7 +106,7 @@ class TServer:
             self.world,
         ]
         if self.verbose: print(command)
-        self.process = pexpect.spawn(' '.join(command))
+        self.process = pexpect.spawn(' '.join(command), timeout=45)
 
         if self.verbose: print('Started server, waiting for completion')
         self.process.expect('Server started')
@@ -148,9 +151,12 @@ class TServer:
             # Required specification for WiringUtils
             with open(txtfile, 'w') as f:
                 # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
-                
-                f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8'))
+                # Need to trim since WiringUtils doesn't like a trailing space
+                f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8')[:-1])
+        # Sync here to avoid accidentally reading without syncing first
+        self.sync()
         self.process.sendline(f'bin write {txtfile}')
+        time.sleep(2)
 
     def read_bin(self, file: str, force=False):
         """Reads world bin into a file"""
@@ -159,7 +165,11 @@ class TServer:
         if not force:
             # Unless forced make sure you don't overwrite a non txt file
             assert(ext == '.txt')
-        self.process.sendline(f'bin read {file}')
+        # WiringUtils has weird case sensitive glitch that I don't feel like fixing
+        read = TMP_DIR + 'read-bin.txt'
+        self.process.sendline(f'bin read {read}')
+        time.sleep(2)
+        shutil.copyfile(read, file)
 
     def write(self, coord: Tuple[int, int], val: bool):
         """Writes a specific tile to the world"""
@@ -187,6 +197,27 @@ class TServer:
         assert(self.running())
         x, y = coord
         self.process.sendline(f'trigger {x} {y}')
+
+    def sync(self):
+        """Sync accelerator"""
+        assert(self.running())
+        self.process.sendline(f'accel sync')
+        time.sleep(0.2)
+
+    def preprocess(self):
+        """Preprocess world file (should be done on world load automatically)"""
+        assert(self.running())
+        self.process.sendline(f'accel preprocess')
+        time.sleep(4)
+
+    def accel_enabled(self, enabled: bool):
+        """Set accelerator on or off"""
+        assert(self.running())
+        if enabled:
+            self.process.sendline(f'accel enable')
+            time.sleep(4)
+        else:
+            self.process.sendline(f'accel disable')
 
     ###########################################################################
     # Higher level functions specific to computerraria
@@ -223,19 +254,20 @@ class TServer:
         self.write_bin(empty)
 
     
-    def run(self, prog_file: str, out_file: str, run_time=20):
+    def run(self, prog_file: str, out_file: str, run_time=15):
         """Runs prog_file and returns output to out_file"""
         assert(self.running())
         self.reset_state()
         self.write_bin(prog_file)
         self.trigger(self.triggers['dummy40'])
 
-        # TODO: add in game interface
+        # TODO: add in game interface to communicate finish
 
         time.sleep(run_time)
 
         self.trigger(self.triggers['dummy40'])
         self.reset_state()
+        # read_bin handles syncing
         self.read_bin(out_file)
 
 
