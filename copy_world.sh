@@ -1,3 +1,4 @@
+#!/bin/sh
 case $1 in
     -t|--to)
         cp ./computer.wld ~/.local/share/Terraria/tModLoader/Worlds/computer.wld

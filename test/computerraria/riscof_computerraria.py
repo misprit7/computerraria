@@ -1,13 +1,7 @@
 import os
-import re
-import shutil
-import subprocess
-import shlex
 import logging
-import random
-import string
-from string import Template
-import sys
+import tinterface
+
 
 import riscof.utils as utils
 import riscof.constants as constants
@@ -18,8 +12,7 @@ logger = logging.getLogger()
 class computerraria(pluginTemplate):
   __model__ = "computerraria"
 
-  #TODO: please update the below to indicate family, version, etc of your DUT.
-  __version__ = "XXX"
+  __version__ = "2.0"
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -67,51 +60,51 @@ class computerraria(pluginTemplate):
 
   def runTests(self, testList):
 
-    # Delete Makefile if it already exists.
-    if os.path.exists(self.work_dir+ "/Makefile." + self.name[:-1]):
-      os.remove(self.work_dir+ "/Makefile." + self.name[:-1])
-    # create an instance the makeUtil class that we will use to create targets.
-    make = utils.makeUtil(makefilePath=os.path.join(self.work_dir, "Makefile." + self.name[:-1]))
-
-    make.makeCommand = 'make -k -j' + self.num_jobs
-
+    logger.info('Starting server')
+    tserver = tinterface.TServer()
+    tserver.start()
+    logger.info('Server loaded')
     for testname in testList:
+      logger.info('Running Test: {0} on DUT'.format(testname))
 
       # for each testname we get all its fields (as described by the testList format)
       testentry = testList[testname]
       test = testentry['test_path']
-      # capture the directory where the artifacts of this test will be dumped/created. RISCOF is
-      # going to look into this directory for the signature files
       test_dir = testentry['work_dir']
 
-      elf = 'my.elf'
+      elf = 'dut.elf'
+      out = 'dut-out.txt'
 
       # name of the signature file as per requirement of RISCOF. RISCOF expects the signature to
       # be named as DUT-<dut-name>.signature. The below variable creates an absolute path of
       # signature file.
       sig_file = os.path.join(test_dir, self.name[:-1] + ".signature")
+      elf_file = os.path.join(test_dir, elf)
+      out_file = os.path.join(test_dir, out)
       compile_macros= ' -D' + " -D".join(testentry['macros'])
 
-      cmd = self.compile_cmd.format(testentry['isa'].lower(), self.xlen, test, elf, compile_macros)
-      print(f"cmd: {cmd}")
+      cmd = self.compile_cmd.format(testentry['isa'].lower(), self.xlen, test, elf_file, compile_macros)
 
-      # if self.target_run:
-      if False:
-        # TODO: Change this to match terraria format
-        simcmd = self.dut_exe + ' --isa={0} +signature={1} +signature-granularity=4 {2}'.format(self.isa, sig_file, elf)
-      else:
-        simcmd = 'echo "NO RUN"'
+      logger.info('Compile command: ' + cmd)
+      utils.shellCommand(cmd).run(cwd=test_dir)
 
-      execute = '@cd {0}; {1}; {2};'.format(testentry['work_dir'], cmd, simcmd)
+      if not self.target_run:
+        continue
 
-      make.add_target(execute)
+      logger.info('Starting test')
 
-    # if you would like to exit the framework once the makefile generation is complete uncomment the
-    # following line. Note this will prevent any signature checking or report generation.
-    #raise SystemExit
+      try:
+        tserver.run(elf_file, out_file, run_time=10)
+        # Don't love hardcoding this but riscof has made it difficult enough as it is for me
+        # Seriously why don't they pass this as a parameter to runTests
+        tinterface.gen_signature(out_file, sig_file, 0x10110)
+      except Exception as e:
+        logger.error(e)
+        logger.error('An error occured, dropping into interactive mode to debug')
+        tserver.process.interact()
+        raise SystemExit
 
-    make.execute_all(self.work_dir)
+      logger.info('Test complete')
 
-    if not self.target_run:
-      raise SystemExit(0)
+
 
