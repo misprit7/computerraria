@@ -10,6 +10,30 @@ TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').e
 COMPUTERRARIA_DIR = os.path.join(os.path.dirname(__file__), '../../')
 TMP_DIR = '/tmp/'
 
+###########################################################################
+# Functions
+###########################################################################
+
+def gen_signature(txt_file: str, sig_file: str, offset: int):
+    """
+    Generates a signature file from an output file
+
+    txt_file: txt file from /bin read in game
+    sig_file: signature file to write to, compliant with riscof specs
+    offset: offset in ram to read from
+    """
+    with open(txt_file, 'r') as txt, open(sig_file) as sig:
+        bytes = txt.read().split()[offset:]
+        # This technically isn't robust if the start/end signature ends with 00
+        while bytes[-1] == '00': bytes.pop()
+        for i in range(0, len(bytes), 4):
+            sig.write(''.join(bytes[i:i+4]))
+            sig.write('\n')
+
+###########################################################################
+# Classes
+###########################################################################
+
 class LoadConfig:
     """A representation of the world config for WiringUtils"""
     def __init__(self, offset: int, cell_width: int, cell_gap: int, cells: int, bank_gap: int, banks: int):
@@ -50,7 +74,8 @@ class TServer:
         self.config_x = LoadConfig(46, 2, 3, 1024, 3185, 2)
         self.config_y = LoadConfig(421, 1, 4, 32, 156, 12)
         self.triggers = {
-            'dummy': (3197, 144), # dummy clock
+            'dummy1': (3197, 144), # dummy clock, 1 dummy
+            'dummy40': (3189, 49), # dummy clock, 40 dummies
             'clk': (3201, 158), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
@@ -203,19 +228,13 @@ class TServer:
         assert(self.running())
         self.reset_state()
         self.write_bin(prog_file)
-        self.trigger(self.triggers['dummy'])
+        self.trigger(self.triggers['dummy40'])
 
-        # monitor = (self.config_x.end(), self.config_y.end())
-        # t_start = time.time()
-        # while not self.read(monitor):
-        #     time.sleep(0.2)
-        #     if time.time() - t_start > 20:
-        #         self.trigger(self.triggers['dummy'])
-        #         raise TimeoutError('Program timed out while executing')
+        # TODO: add in game interface
 
         time.sleep(run_time)
 
-        self.trigger(self.triggers['dummy'])
+        self.trigger(self.triggers['dummy40'])
         self.reset_state()
         self.read_bin(out_file)
 
