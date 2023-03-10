@@ -23,6 +23,8 @@ def gen_signature(txt_file: str, sig_file: str, offset: int):
         bytes = txt.read().lower().split()[offset:]
         # This technically isn't robust if the start/end signature ends with 00
         while bytes[-1] == '00': bytes.pop()
+        # For some undocumented reason the number of lines to be printed must be divisible by 4
+        while len(bytes)%16 != 0: bytes.append('00')
         for i in range(0, len(bytes), 4):
             # Reverse since roman numbers are big endian while we're little endian
             sig.write(''.join(bytes[i:i+4][::-1]))
@@ -78,7 +80,9 @@ class TServer:
         self.config_y = LoadConfig(421, 1, 4, 32, 156, 12)
         self.triggers = {
             'dummy1': (3197, 144), # dummy clock, 1 dummy
-            'dummy40': (3189, 49), # dummy clock, 40 dummies
+            'dummy40-1': (3189, 49), # dummy clock, 40 dummies
+            'dummy40-2': (3177, 49),
+            'dummy40-3': (3129, 49),
             'clk': (3201, 158), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
@@ -266,13 +270,17 @@ class TServer:
         assert(self.running())
         self.reset_state()
         self.write_bin(prog_file)
-        self.trigger(self.triggers['dummy40'])
+        self.trigger(self.triggers['dummy40-1'])
+        self.trigger(self.triggers['dummy40-2'])
+        self.trigger(self.triggers['dummy40-3'])
 
         # TODO: add in game interface to communicate finish
 
         time.sleep(run_time)
 
-        self.trigger(self.triggers['dummy40'])
+        self.trigger(self.triggers['dummy40-1'])
+        self.trigger(self.triggers['dummy40-2'])
+        self.trigger(self.triggers['dummy40-3'])
         # Very important to sync here, trigger is not thread safe unless we wait until things are synced
         self.sync()
         self.reset_state()

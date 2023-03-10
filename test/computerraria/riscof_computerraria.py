@@ -94,7 +94,7 @@ class computerraria(pluginTemplate):
       logger.info('Starting test')
 
       try:
-        tserver.run(elf_file, out_file, run_time=10)
+        tserver.run(elf_file, out_file, run_time=5)
         # Don't love hardcoding this but riscof has made it difficult enough as it is for me
         # Seriously why don't they pass this as a parameter to runTests
         tinterface.gen_signature(out_file, sig_file, 0x11110)
