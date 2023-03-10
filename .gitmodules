@@ -1,3 +1,3 @@
 [submodule "test/riscv-arch-test"]
 	path = test/riscv-arch-test
-	url = git@github.com:riscv-non-isa/riscv-arch-test.git
+	url = git@github.com:misprit7/riscv-arch-test-low-mem.git
