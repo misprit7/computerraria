@@ -196,7 +196,7 @@ Mem store addr
 Load rs2
 Store store data
 Mem exec
-Align store
+Put store onto db
 Delay
 Mem exec and set mem to write
 Incr pc
