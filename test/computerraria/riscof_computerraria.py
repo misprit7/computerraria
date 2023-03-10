@@ -97,7 +97,7 @@ class computerraria(pluginTemplate):
         tserver.run(elf_file, out_file, run_time=10)
         # Don't love hardcoding this but riscof has made it difficult enough as it is for me
         # Seriously why don't they pass this as a parameter to runTests
-        tinterface.gen_signature(out_file, sig_file, 0x10110)
+        tinterface.gen_signature(out_file, sig_file, 0x11110)
       except Exception as e:
         logger.error(e)
         logger.error('An error occured, dropping into interactive mode to debug')

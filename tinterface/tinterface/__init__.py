@@ -20,7 +20,7 @@ def gen_signature(txt_file: str, sig_file: str, offset: int):
     offset: offset in ram to read from
     """
     with open(txt_file, 'r') as txt, open(sig_file, 'w') as sig:
-        bytes = txt.read().split()[offset:]
+        bytes = txt.read().lower().split()[offset:]
         # This technically isn't robust if the start/end signature ends with 00
         while bytes[-1] == '00': bytes.pop()
         for i in range(0, len(bytes), 4):
@@ -153,10 +153,13 @@ class TServer:
                 # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
                 # Need to trim since WiringUtils doesn't like a trailing space
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8')[:-1])
-        # Sync here to avoid accidentally reading without syncing first
+        # Sync here to avoid accidentally writing without syncing first
         self.sync()
-        self.process.sendline(f'bin write {txtfile}')
-        time.sleep(2)
+        # WiringUtils has weird case sensitive glitch that I don't feel like fixing
+        write = TMP_DIR + 'write-bin.txt'
+        shutil.copyfile(txtfile, write)
+        self.process.sendline(f'bin write {write}')
+        self.process.expect('Write complete')
 
     def read_bin(self, file: str, force=False):
         """Reads world bin into a file"""
@@ -165,10 +168,12 @@ class TServer:
         if not force:
             # Unless forced make sure you don't overwrite a non txt file
             assert(ext == '.txt')
+        # Sync here to avoid accidentally reading without syncing first
+        self.sync()
         # WiringUtils has weird case sensitive glitch that I don't feel like fixing
         read = TMP_DIR + 'read-bin.txt'
         self.process.sendline(f'bin read {read}')
-        time.sleep(2)
+        self.process.expect('Read complete')
         shutil.copyfile(read, file)
 
     def write(self, coord: Tuple[int, int], val: bool):
@@ -197,27 +202,29 @@ class TServer:
         assert(self.running())
         x, y = coord
         self.process.sendline(f'trigger {x} {y}')
+        self.process.expect('Trigger complete')
 
     def sync(self):
         """Sync accelerator"""
         assert(self.running())
         self.process.sendline(f'accel sync')
-        time.sleep(0.2)
+        self.process.expect('Sync complete')
 
     def preprocess(self):
         """Preprocess world file (should be done on world load automatically)"""
         assert(self.running())
         self.process.sendline(f'accel preprocess')
-        time.sleep(4)
+        self.process.expect('Preprocess complete')
 
     def accel_enabled(self, enabled: bool):
         """Set accelerator on or off"""
         assert(self.running())
         if enabled:
             self.process.sendline(f'accel enable')
-            time.sleep(4)
+            self.process.expect('Accelerator enabled')
         else:
             self.process.sendline(f'accel disable')
+            self.process.expect('Accelerator disabled')
 
     ###########################################################################
     # Higher level functions specific to computerraria
@@ -266,6 +273,8 @@ class TServer:
         time.sleep(run_time)
 
         self.trigger(self.triggers['dummy40'])
+        # Very important to sync here, trigger is not thread safe unless we wait until things are synced
+        self.sync()
         self.reset_state()
         # read_bin handles syncing
         self.read_bin(out_file)
