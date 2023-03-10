@@ -148,11 +148,11 @@ Store pc
 JALR
 Load imm
 ALU store 2
+Read rs1
+ALU store 1
 Load PC
 Incr db
 Store rd
-Read rs1
-ALU store 1
 ALU exec
 Set lsb of db to 0
 Store pc
