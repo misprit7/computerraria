@@ -154,6 +154,7 @@ Store rd
 Read rs1
 ALU store 1
 ALU exec
+Set lsb of db to 0
 Store pc
 
 OP
