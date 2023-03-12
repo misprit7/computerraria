@@ -7,16 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     container: misprit7/computerraria:latest
     steps:
-      - name: Checkout WiringUtils
-        uses: actions/checkout@v3
-        with:
-          repository: misprit7/WiringUtils
-          path: /root/.local/share/Terraria/tModLoader/ModSources
-
       - name: Compile WiringUtils
         run: |
-          dotnet build &&\
-          cp ./bin/Debug/net6.0/tModLoader.dll /root/.local/share/Steam/steamapps/common/tModLoader
+          cd /root/.local/share/Terraria/tModLoader/ModSources &&\
+          git clone https://github.com/misprit7/WiringUtils.git &&\
+          cd WiringUtils &&\
+          dotnet build
 
       - name: Checkout computerraria
         uses: actions/checkout@v3
@@ -27,7 +23,7 @@ jobs:
         run: pip3 install -e ./tinterface
 
       - name: Run riscof tests
-        run: ./run-tests.sh
+        run: su -c "./run-tests.sh"
 
       - name: Upload results
         uses: actions/upload-artifact@v3
