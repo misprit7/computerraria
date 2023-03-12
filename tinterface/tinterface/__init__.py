@@ -3,7 +3,10 @@ import os, shutil, time
 from typing import Tuple
 import pexpect
 
-TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').expanduser()) + '/'
+# CI image is under root user
+TMODLOADER_DIR = str(Path('/root/.local/share/Steam/steamapps/common/tModLoader/')) + '/'
+if not os.path.isdir(TMODLOADER_DIR):
+    TMODLOADER_DIR = str(Path('~/.local/share/Steam/steamapps/common/tModLoader/').expanduser()) + '/'
 # This only works if installed with pip install -e, otherwise it is up to the user to find world
 COMPUTERRARIA_DIR = os.path.join(os.path.dirname(__file__), '../../')
 TMP_DIR = '/tmp/'

@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     git \
     libicu70 \
     python3 \
+    make \
     vim \
     wget && \
     apt-get install -y --no-install-recommends \
