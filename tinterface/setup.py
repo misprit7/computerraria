@@ -11,4 +11,7 @@ setup(
     packages=['tinterface'],
     zip_safe=False,
     scripts=['bin/tcli'],
+    install_requires=[
+        "pexpect"
+    ],
 )
