@@ -23,6 +23,7 @@ FROM steamcmd/steamcmd:latest
 # Yeah I'm not supposed to install user applications (vim), but it helps when 
 # debugging and is trivially lightweight
 RUN apt-get update && apt-get install -y \
+    bsdmainutils \
     curl \
     gcc \
     git \

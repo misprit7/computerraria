@@ -1,6 +1,12 @@
 name: Tests
 run-name: Continuous integration tests
-on: [push]
+on: 
+  push:
+    paths:
+      - 'computer.wld'
+      - 'test/**'
+      - 'tinterface/**'
+
 jobs:
   riscof:
     name: RISCV compliance tests
@@ -26,6 +32,7 @@ jobs:
         run: ./run-tests.sh
 
       - name: Upload results
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: Result summary
