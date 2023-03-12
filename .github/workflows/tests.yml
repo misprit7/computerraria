@@ -23,7 +23,7 @@ jobs:
         run: pip3 install -e ./tinterface
 
       - name: Run riscof tests
-        run: su -c "./run-tests.sh"
+        run: ./run-tests.sh
 
       - name: Upload results
         uses: actions/upload-artifact@v3
