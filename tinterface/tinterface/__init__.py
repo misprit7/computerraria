@@ -150,7 +150,15 @@ class TServer:
         binfile = f + '.bin'
         txtfile = f + '.txt'
         if ext == '.elf':
-            pexpect.run(f'riscv32-unknown-elf-objcopy -O binary {file} {binfile}')
+            objcopy = ''
+            if shutil.which('rust-objcopy'):
+                objcopy = 'rust-objcopy'
+            elif shutil.which('riscv32-unknown-elf-objcopy'):
+                objcopy = 'riscv32-unknown-elf-objcopy'
+            else:
+                print('No objdump utility found, write failed')
+                return
+            pexpect.run(f'{objcopy} -O binary {file} {binfile}')
         if ext == '.bin' or ext == '.elf':
             # Required specification for WiringUtils
             with open(txtfile, 'w') as f:
