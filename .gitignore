@@ -4,7 +4,8 @@
 *.wld.bak
 *.wld.bak2
 
-
+# Docker secrets
+docker/.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
