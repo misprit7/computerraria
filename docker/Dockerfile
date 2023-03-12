@@ -22,7 +22,7 @@ RUN /root/Steam/steamapps/common/tModLoader/LaunchUtils/InstallNetFramework.sh
 # Yeah I'm not supposed to install vim, but it helps when debugging and is trivially lightweight
 RUN apt-get update && apt-get install -y \
     libicu70 \
-    vim \ 
+    vim \
     wget
 
 
