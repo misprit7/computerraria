@@ -7,7 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     container: misprit7/computerraria:latest
     steps:
-      - name: Checkout
+      - name: Checkout WiringUtils
+        uses: actions/checkout@v3
+        with:
+          repository: misprit7/WiringUtils
+
+      - name: Checkout computerraria
         uses: actions/checkout@v3
         with:
           submodules: recursive
