@@ -12,6 +12,8 @@
 ################################################################################
 # Base
 ################################################################################
+# Probably should have used this in hindsight:
+# https://github.com/tModLoader/tModLoader/tree/1.4/patches/tModLoader/Terraria/release_extras/DedicatedServerUtils
 FROM steamcmd/steamcmd:latest
 
 
@@ -20,7 +22,6 @@ FROM steamcmd/steamcmd:latest
 ################################################################################
 # Yeah I'm not supposed to install user applications (vim), but it helps when 
 # debugging and is trivially lightweight
-# Pip is for some reason massive (300mb) unless you don't install recommended
 RUN apt-get update && apt-get install -y \
     curl \
     gcc \
@@ -40,7 +41,10 @@ RUN --mount=type=secret,id=_env,dst=/etc/secrets/.env \
     echo exit | steamcmd \
         "+login $(sed -n 1p /etc/secrets/.env) $(sed -n 2p /etc/secrets/.env)" \
         "+app_update 1281930 validate" &&\
-    ln -s /root/Steam/steamapps/ /root/.local/share/Steam/
+    ln -s /root/Steam/steamapps/ /root/.local/share/Steam/ &&\
+    mkdir -p /root/.local/share/Terraria/tModLoader/ModSources &&\
+    mkdir -p /root/.local/share/Terraria/tModLoader/Mods
+COPY tModLoader.targets /root/.local/share/Terraria/tModLoader/ModSources
 
 
 ################################################################################
@@ -89,7 +93,7 @@ COPY riscv_sim_RV32 /usr/local/bin
 
 
 ################################################################################
-# Entrypoint
+# Entry point
 ################################################################################
 # Override default entrypoint/cmd from base image
 ENTRYPOINT ["/usr/bin/env"]
