@@ -7,6 +7,9 @@
 # Docker secrets
 docker/.env
 
+# Docker build artifact
+docker/riscv_sim_RV32
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
