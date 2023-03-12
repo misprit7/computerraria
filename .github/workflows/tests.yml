@@ -12,5 +12,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Hello world
-        run: echo "Hello world"
+      - name: Install tinterface
+        run: pip3 install -e ./tinterface
+
+      - name: Run riscof tests
+        run: ./run-tests.sh
+
+      - name: Upload results
+        uses: actions/upload-artifacts@v3
+        with:
+          name: Result summary
+          path: ./test/riscof_work/report.html
+
