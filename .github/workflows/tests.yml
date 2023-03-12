@@ -1,5 +1,5 @@
 name: Tests
-run-name: Continuous integration test runner action
+run-name: Continuous integration tests
 on: [push]
 jobs:
   riscof:

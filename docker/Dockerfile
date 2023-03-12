@@ -51,6 +51,7 @@ WORKDIR /root
 # Riscof
 RUN pip3 install git+https://github.com/riscv/riscof.git
 
+COPY riscv_sim_RV32 /usr/local/bin
 
 # Override default entrypoint/cmd from base image
 ENTRYPOINT ["/usr/bin/env"]
