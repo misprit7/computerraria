@@ -22,7 +22,7 @@ This project is an attempt to score a decisive route in this ongoing battle in f
 
 Despite what the pitch may lead one to believe the goal of this project is to maximize the compliance and processing ability of the in game cpu. This is only possible with the help of an accelerator mod, which maintains full compatibility with the vanilla wiring system but reimplements it in a much more efficient manner:
 
-[WiringUtils](https://github.com/misprit7/WiringUtils) - A wiring accelerator and headless control mod
+[WireHead](https://github.com/misprit7/WireHead) - A wiring accelerator and headless control mod
 
 With this installed, the current specs of the computer are as follows: 
 

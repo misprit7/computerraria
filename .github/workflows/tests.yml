@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     container: misprit7/computerraria:latest
     steps:
-      - name: Compile WiringUtils
+      - name: Compile WireHead
         run: |
           cd /root/.local/share/Terraria/tModLoader/ModSources &&\
-          git clone https://github.com/misprit7/WiringUtils.git &&\
-          cd WiringUtils &&\
+          git clone https://github.com/misprit7/WireHead.git &&\
+          cd WireHead &&\
           dotnet build
 
       - name: Checkout computerraria
