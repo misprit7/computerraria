@@ -39,7 +39,7 @@ def gen_signature(txt_file: str, sig_file: str, offset: int):
 ###########################################################################
 
 class LoadConfig:
-    """A representation of the world config for WiringUtils"""
+    """A representation of the world config for WireHead"""
     def __init__(self, offset: int, cell_width: int, cell_gap: int, cells: int, bank_gap: int, banks: int):
         self.offset=offset
         self.cell_width=cell_width
@@ -164,14 +164,14 @@ class TServer:
                 return
             pexpect.run(f'{objcopy} -O binary {file} {binfile}')
         if ext == '.bin' or ext == '.elf':
-            # Required specification for WiringUtils
+            # Required specification for WireHead
             with open(txtfile, 'w') as f:
                 # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
-                # Need to trim since WiringUtils doesn't like a trailing space
+                # Need to trim since WireHead doesn't like a trailing space
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8')[:-1])
         # Sync here to avoid accidentally writing without syncing first
         self.sync()
-        # WiringUtils has weird case sensitive glitch that I don't feel like fixing
+        # WireHead has weird case sensitive glitch that I don't feel like fixing
         write = TMP_DIR + 'write-bin.txt'
         shutil.copyfile(txtfile, write)
         self.process.sendline(f'bin write {write}')
@@ -186,7 +186,7 @@ class TServer:
             assert(ext == '.txt')
         # Sync here to avoid accidentally reading without syncing first
         self.sync()
-        # WiringUtils has weird case sensitive glitch that I don't feel like fixing
+        # WireHead has weird case sensitive glitch that I don't feel like fixing
         read = TMP_DIR + 'read-bin.txt'
         self.process.sendline(f'bin read {read}')
         self.process.expect('Read complete')
