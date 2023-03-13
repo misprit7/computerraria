@@ -16,7 +16,7 @@
 
 There are two fundamentally competing forces when it comes to computer speed. The first, and most famous, is Moore's law, where physical transistor densities scale exponentially. The second is the inevitable growth of software bloat that runs on top of increasingly modern processors. There's a kind of equilibrium between these two competing beasts, ensuring that a user always manages to get at least a split second of mindfulness while staring at a frozen screen whenever attempting to open the latest app. 
 
-This project is an attempt to score a decisive route in this ongoing battle in favor of the *programmer*. By emulating a complete rv32i instruction set inside the wiring system of [Terraria](https://www.terraria.org/), we push back speeds to the early 70 era, tossing the ball firmly back into the court of silicon engineer without losing any software functionality. 
+This project is an attempt to score a decisive route in this ongoing battle in favor of the *programmer*. By emulating a complete rv32i instruction set inside the wiring system of [Terraria](https://www.terraria.org/), we push back speeds to the early 70s era, tossing the ball firmly back into the court of silicon engineer without losing any software functionality. 
 
 # Specs
 
