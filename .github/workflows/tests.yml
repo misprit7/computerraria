@@ -6,6 +6,7 @@ on:
       - 'computer.wld'
       - 'test/**'
       - 'tinterface/**'
+  repository_dispatch:
   workflow_dispatch:
 
 jobs:
