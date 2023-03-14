@@ -1,15 +1,16 @@
 name: Tests
-run-name: Continuous integration tests
+run-name: Continuous Integration Tests
 on: 
   push:
     paths:
       - 'computer.wld'
       - 'test/**'
       - 'tinterface/**'
+  repository_dispatch:
 
 jobs:
   riscof:
-    name: RISCV compliance tests
+    name: RISCV Compliance Tests
     runs-on: ubuntu-latest
     container: misprit7/computerraria:latest
     steps:

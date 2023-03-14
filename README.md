@@ -82,7 +82,7 @@ Interfaces programmatically with running Terraria instance. This consists of bot
 
 The easiest way to get setup is with the docker image available here: 
 
-[Docker Image](https://hub.docker.com/repository/docker/misprit7/computerraria/general)
+[Docker Image](https://hub.docker.com/r/misprit7/computerraria)
 
 If you already have docker installed this can be pulled with
 
