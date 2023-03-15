@@ -38,5 +38,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Result summary
-          path: ./test/riscof_work/report.html
+          path: |
+            ./test/riscof_work/
 

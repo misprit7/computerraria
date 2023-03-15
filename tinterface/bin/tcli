@@ -35,11 +35,11 @@ parser.add_argument(
     help='output file of run',
 )
 parser.add_argument(
-    '-t',
-    '--time',
+    '-c',
+    '--cycles',
     type=int,
-    help='time to give for program to run',
-    default=20
+    help='number of cycles to let program run for',
+    default=50000
 )
 parser.add_argument(
     '-i',
@@ -57,7 +57,7 @@ t.start()
 
 if args.run is not None:
     try:
-        t.run(args.run, args.output, run_time=args.time)
+        t.run(args.run, args.output, clock_cycles=args.cycles)
     except Exception as e:
         print(e)
         print('An error occured, starting interactive mode to let you debug')
