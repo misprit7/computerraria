@@ -1,5 +1,5 @@
 from pathlib import Path
-import os, shutil, time
+import os, shutil, time, sys
 from typing import Tuple
 import pexpect
 
@@ -10,6 +10,8 @@ if not os.path.isdir(TMODLOADER_DIR):
 # This only works if installed with pip install -e, otherwise it is up to the user to find world
 COMPUTERRARIA_DIR = os.path.join(os.path.dirname(__file__), '../../')
 TMP_DIR = '/tmp/'
+
+FPS = 60
 
 ###########################################################################
 # Functions
@@ -62,6 +64,10 @@ class TServer:
 
     Useful tips: 
     - Use tserver.process.interact() to debug server, ctrl+] to exit back to python
+    - Never match an expect statement with anything compatible with the following two lines:
+    Saving world data: 100%
+    Validating world save: 100%
+     ( or any percentage). They are sent randomly every few minutes
     """
 
     def __init__(
@@ -78,6 +84,7 @@ class TServer:
         self.inplace = inplace
         self.verbose = verbose
 
+
         # World specific config
         # Most of the random literal numbers should be here
         self.config_x = LoadConfig(46, 2, 3, 1024, 3185, 2)
@@ -87,6 +94,7 @@ class TServer:
             'dummy40-1': (3189, 49), # dummy clock, 40 dummies
             'dummy40-2': (3177, 49),
             'dummy40-3': (3129, 49),
+            'dummy-tl': (3089, 53), # Individual dummies, top left
             'clk': (3201, 158), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
@@ -97,6 +105,12 @@ class TServer:
         self.tiles = {
             'inexec': (3199, 156), # while in execution
         }
+        self.dummies_gap = (12, 9)
+        self.num_dummies = (12, 10)
+
+        # Keep track of which dummies are on
+        # indexed by [x][y]
+        self.dummies = [[False for _ in range(self.num_dummies[1])] for _ in range(self.num_dummies[0])]
 
         if not self.inplace:
             self.world = shutil.copy(self.world, TMP_DIR)
@@ -113,17 +127,21 @@ class TServer:
             '-world',
             self.world,
         ]
-        if self.verbose: print(command)
+        if self.verbose:print(command)
         self.process = pexpect.spawn(' '.join(command), timeout=45)
 
-        if self.verbose: print('Started server, waiting for completion')
+        if self.verbose:
+            self.process.logfile = sys.stdout.buffer
+
         self.process.expect('Server started')
         time.sleep(0.2)
         self.process.sendline('init')
         time.sleep(0.2)
         self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
         time.sleep(0.2)
-        if self.verbose: print('Server started successfully')
+        self.clock_start(self.triggers['clk'], -1)
+        time.sleep(0.2)
+
 
     def stop(self):
         """Stops the server and cleans up"""
@@ -204,7 +222,7 @@ class TServer:
 
         x, y = coord
         self.process.sendline(f'read {x} {y}')
-        self.process.expect(': (?P<val>[0|1])\r\n')
+        self.process.expect('Read complete: (?P<val>[0|1])\r\n')
 
         if self.process.match is None: 
             raise ValueError('Read returned neither 0 nor 1')
@@ -242,6 +260,31 @@ class TServer:
             self.process.sendline(f'accel disable')
             self.process.expect('Accelerator disabled')
 
+    def clock_start(self, coord: Tuple[int, int], count: int):
+        """
+        Registers a monitor on the clock
+        """
+        assert(self.running())
+        x, y = coord
+        self.process.sendline(f'monitor clock {x} {y} {count}')
+        self.process.expect('Clock count started')
+
+    def clock_wait(self):
+        """Waits for the clock to finish"""
+        assert(self.running())
+        self.process.expect('Clock finished')
+
+    def clock_count(self) -> int:
+        """Gets the current clock count"""
+        assert(self.running())
+        self.process.sendline('monitor clock count')
+        self.process.expect('Clock count complete: (?P<count>[0-9]+)\r\n')
+        if self.process.match is None: 
+            raise ValueError('Clock count didn\'t return an int')
+        return int(self.process.match.group('count'))
+
+
+
     ###########################################################################
     # Higher level functions specific to computerraria
     ###########################################################################
@@ -276,38 +319,79 @@ class TServer:
         with open(empty, 'w') as _: pass
         self.write_bin(empty)
 
-    
-    def run(self, prog_file: str, out_file: str, run_time=15):
-        """Runs prog_file and returns output to out_file"""
+    def set_freq(self, f: int):
+        """
+        Triggers a certain number of dummies to be active to match frequency
+        """
+        n = f // FPS
+        X = range(self.num_dummies[0])
+        Y = range(self.num_dummies[1])
+        n_cur = sum((sum(a) for a in self.dummies))
+        for x in X:
+            for y in Y:
+                if n_cur == n:
+                    return
+                if n_cur < n and not self.dummies[x][y]:
+                    self.dummies[x][y] = True
+                    self.trigger((self.triggers['dummy-tl'][0] + x * self.dummies_gap[0],
+                                 self.triggers['dummy-tl'][1] + y * self.dummies_gap[1]))
+                    n_cur += 1
+                if n_cur > n and self.dummies[x][y]:
+                    self.dummies[x][y] = False
+                    self.trigger((self.triggers['dummy-tl'][0] + x * self.dummies_gap[0],
+                                 self.triggers['dummy-tl'][1] + y * self.dummies_gap[1]))
+                    n_cur -= 1
+
+    def run(self, prog_file: str, out_file: str, clock_cycles=50000):
+        """
+        Runs prog_file and returns output to out_file
+
+        This method attempts to be clever about the frequency given to the cpu to minimize lag
+        """
         assert(self.running())
         self.reset_state()
         self.write_bin(prog_file)
-        self.trigger(self.triggers['dummy40-1'])
-        self.trigger(self.triggers['dummy40-2'])
-        self.trigger(self.triggers['dummy40-3'])
 
-        # TODO: add in game interface to communicate finish
+        first_cc = self.clock_count()
 
-        time.sleep(run_time)
+        # Number of dummies active
+        n_cur = 120
+        self.set_freq(n_cur * FPS)
 
-        self.trigger(self.triggers['dummy40-1'])
-        self.trigger(self.triggers['dummy40-2'])
-        self.trigger(self.triggers['dummy40-3'])
-        # Very important to sync here, trigger is not thread safe unless we wait until things are synced
+        # Delay between dynamic adjustment of clock speed
+        # Doesn't matter too much as long as triggers aren't super frequent
+        delay = 3
+        
+        # Clock cycle tracker
+        cc = self.clock_count()
+        last_cc = cc
+        while cc - first_cc < clock_cycles:
+            # Do actual computation
+            time.sleep(delay)
+            last_cc = cc
+            cc = self.clock_count()
+
+            # Calculate whether we're lagging or not
+            expected_count = FPS * delay * n_cur
+            ratio = (cc - last_cc) / expected_count
+            # ~0.9 fps is a reasonable amount of lag
+            if ratio < 0.90:
+                n_cur = max(1, n_cur - 5)
+            else:
+                n_cur = min(self.num_dummies[0] * self.num_dummies[1], n_cur + 5)
+
+            # Adjust frequency
+            print(f'Adjusting frequency to f={n_cur * FPS} Hz (Expected: {expected_count}, cc: {cc}, last_cc: {last_cc}, ratio: {ratio})')
+            self.set_freq(n_cur * FPS)
+
+            cc = self.clock_count()
+
+        self.set_freq(0)
+
         self.sync()
         self.reset_state()
         # read_bin handles syncing
         self.read_bin(out_file)
-
-
-
-        
-
-
-
-
-
-
 
 
 
