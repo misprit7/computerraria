@@ -376,7 +376,8 @@ class TServer:
             ratio = (cc - last_cc) / expected_count
             # ~0.9 fps is a reasonable amount of lag
             if ratio < 0.90:
-                n_cur = max(1, n_cur - 5)
+                n_next = int(n_cur * ratio / 0.9)
+                n_cur = max(1, n_next)
             else:
                 n_cur = min(self.num_dummies[0] * self.num_dummies[1], n_cur + 5)
 
