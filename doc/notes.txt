@@ -54,6 +54,9 @@ Misc:
 8-0: Load tmp
 8-3: Store tmp
 
+Registers:
+Read only (0x1E1FC):
+0: Write screen
 
 Notes on registers: 
 - Use 32 bit binary tree multiplexer
