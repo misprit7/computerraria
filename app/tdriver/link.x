@@ -1,27 +1,19 @@
 MEMORY
 {
-  FLASH : ORIGIN = 0x00000000, LENGTH = 10K
-  RAM : ORIGIN = 0x00001000, LENGTH = 10K
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
+  RAM (rwx) : ORIGIN = 0x000010000, LENGTH = 32K
+  /* Memory mapped io */
+  SCREEN (w) : ORIGIN = 0x1E000, LENGTH = 8K
 }
 
 /* The entry point is the reset handler */
 ENTRY(Reset);
 
-EXTERN(RESET_VECTOR);
-
 SECTIONS
 {
-  .vector_table ORIGIN(FLASH) :
-  {
-    /* First entry: initial Stack Pointer value */
-    LONG(ORIGIN(RAM) + LENGTH(RAM));
-
-    /* Second entry: reset vector */
-    KEEP(*(.vector_table.reset_vector));
-  } > FLASH
-
   .text :
   {
+    *(.start);
     *(.text .text.*);
   } > FLASH
 
@@ -45,5 +37,7 @@ SECTIONS
   } > RAM
 
   _sidata = LOADADDR(.data);
+  _stack_start = ORIGIN(RAM) + LENGTH(RAM);
+
 
 }
