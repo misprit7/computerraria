@@ -13,7 +13,7 @@ SECTIONS
 {
   .text :
   {
-    *(.start);
+    *(.text.start);
     *(.text .text.*);
   } > FLASH
 

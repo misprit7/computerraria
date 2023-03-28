@@ -20,13 +20,19 @@ fn main() {
     let _x = RODATA;
     let _y = unsafe { &BSS };
     let _z = unsafe { &DATA };
+    let screen: *mut u32 = 0x1E000 as *mut u32;
+    let screen_write: *mut u32 = 0x1E1FC as *mut u32;
     unsafe {
         // let (mut a, mut b) = (1, 1);
-        let ptr: *mut u8 = 0x1100 as *mut u8;
-
         loop {
-            (B, A) = (A, A+B);
-            *ptr = B;
+            // (b, a) = (a, a+b);
+            for i in 0..96 {
+                for j in 0..32 {
+                    screen.add(i).write_volatile(1 << j);
+                    screen_write.write_volatile(1);
+                }
+                screen.add(i).write_volatile(0);
+            }
         }
     }
 }
@@ -35,7 +41,7 @@ fn main() {
 // Entry point of program
 // Sets up abi and initializes memory
 #[no_mangle]
-#[link_section = ".start"]
+#[link_section = ".text.start"]
 pub unsafe extern "C" fn Reset() -> ! {
 
     // Init stack pointer
@@ -54,6 +60,7 @@ pub unsafe extern "C" fn Reset() -> ! {
     }
 
     // custom memcpy implementation for size
+    // These are not good for alignment, TODO: improve these or replace
     let count = &_ebss as *const u8 as usize - &_sbss as *const u8 as usize;
     // ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
     let mut p = &mut _sbss as *mut u8;
