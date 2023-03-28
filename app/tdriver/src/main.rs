@@ -5,16 +5,8 @@
 // #![feature(core_intrinsics)]
 
 use core::panic::PanicInfo;
-// use core::intrinsics;
+use core::arch::asm;
 // use core::ptr;
-
-// fn main() {
-    // unsafe {
-    //     let ptr: *mut u8 = 0b10000 as *mut u8;
-    //     *ptr = 2
-    // }
-
-// }
 
 static RODATA: &[u8] = b"Hello, world!";
 static mut BSS: u8 = 0;
@@ -22,6 +14,7 @@ static mut DATA: u16 = 1;
 static mut A: u8 = 1;
 static mut B: u8 = 1;
 
+// Entry point of user code
 #[no_mangle]
 fn main() {
     let _x = RODATA;
@@ -39,8 +32,17 @@ fn main() {
 }
 
 
+// Entry point of program
+// Sets up abi and initializes memory
 #[no_mangle]
+#[link_section = ".start"]
 pub unsafe extern "C" fn Reset() -> ! {
+
+    // Init stack pointer
+    asm!(
+        "la sp, _stack_start"
+    );
+
     // Initialize RAM
     extern "C" {
         static mut _sbss: u8;
@@ -51,6 +53,7 @@ pub unsafe extern "C" fn Reset() -> ! {
         static _sidata: u8;
     }
 
+    // custom memcpy implementation for size
     let count = &_ebss as *const u8 as usize - &_sbss as *const u8 as usize;
     // ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
     let mut p = &mut _sbss as *mut u8;
@@ -76,13 +79,7 @@ pub unsafe extern "C" fn Reset() -> ! {
     main()
 }
 
-// The reset vector, a pointer into the reset handler
-#[link_section = ".vector_table.reset_vector"]
-#[no_mangle]
-pub static RESET_VECTOR: unsafe extern "C" fn() -> ! = Reset;
-
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    // unsafe { intrinsics::abort() }
     loop {}
 }
