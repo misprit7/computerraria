@@ -13,9 +13,10 @@ pub mod graphics;
 // Sets up abi and initializes memory
 #[no_mangle]
 #[link_section = ".text.start"]
-pub unsafe extern "C" fn Reset() -> ! {
+unsafe extern "C" fn Reset() -> ! {
 
     // Init stack pointer
+    // Untested, very possible I'm not doing this right
     asm!(
         "la sp, _stack_start"
     );
@@ -66,6 +67,18 @@ fn panic(_info: &PanicInfo) -> ! {
  * Macros
  ******************************************************************************/
 
+/**
+ * Macro to define entry point of program in a type safe way.
+ *
+ * To use, define a divergent function (a function with `-> !`) and call this macro:
+ * ```
+ * entry!(main);
+ *
+ * fn main() -> ! {
+ *     // Your code here
+ *  }
+ * ```
+ */
 #[macro_export]
 macro_rules! entry {
     ($path:path) => {

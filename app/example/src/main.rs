@@ -17,20 +17,11 @@ fn main() -> ! {
     let _x = RODATA;
     let _y = unsafe { &BSS };
     let _z = unsafe { &DATA };
-    let screen: *mut u32 = 0x1E000 as *mut u32;
-    let screen_write: *mut u32 = 0x1E1FC as *mut u32;
-    graphics::tester();
-    unsafe {
-        // let (mut a, mut b) = (1, 1);
-        loop {
-            // (b, a) = (a, a+b);
-            for i in 0..96 {
-                for j in 0..32 {
-                    screen.add(i).write_volatile(1 << j);
-                    screen_write.write_volatile(1);
-                }
-                screen.add(i).write_volatile(0);
-            }
-        }
+    // graphics::sanity_check();
+    loop {
+        // let mut arr: [[u32; 2]; 48] = [[1; 2]; 48];
+        let mut arr: [u64; 48] = [1; 48];
+        graphics::write_raw(&arr);
+        graphics::update();
     }
 }
