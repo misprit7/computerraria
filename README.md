@@ -18,7 +18,14 @@ There are two fundamentally competing forces when it comes to computer speed. Th
 
 This project is an attempt to score a decisive rout in this ongoing battle in favor of the *programmer*. By emulating a complete rv32i instruction set inside the wiring system of [Terraria](https://www.terraria.org/), we push back speeds to the early 70s era, tossing the ball firmly back into the court of silicon engineer without losing any software functionality. 
 
-# Specs
+# Overview
+
+<div align="center">
+  <a href=https://easyzoom.com/image/412333>
+    <img src="doc/img/poster-small.png"/>
+    Click to see navigable image
+  </a>
+</div>
 
 Despite what the pitch may lead one to believe the goal of this project is to maximize the compliance and processing ability of the in game cpu. This is only possible with the help of an accelerator mod, which maintains full compatibility with the vanilla wiring system but reimplements it in a much more efficient manner:
 
@@ -37,9 +44,9 @@ The major relevant parts of the project are as follows:
 ```
 .
 ├── app/
-│   └── tdriver/
+│   ├── tdriver/
+│   └── template/
 ├── computer.wld
-├── copy_world.sh
 ├── doc/
 ├── docker/
 ├── test/
@@ -48,31 +55,35 @@ The major relevant parts of the project are as follows:
     └── tinterface/
 ```
 
-## app/
+`app/`
 
 Higher level applications to be run on the computer, not including compliance tests. Currently all in rust but could also easily be in C. 
 
-### tdriver/
+`app/tdriver/`
 
-Driver API for interacting cpu from rust. 
+Driver API for interacting cpu from rust, mostly extremely low level startup code and graphics drivers.
 
-## computer.wld
+`app/template/`
+
+Template for new rust projects that implements minimal tdriver
+
+`computer.wld`
 
 The actual world file. This is technically a binary file, but given the context of the project it acts much more like source code given that it is edited manually and compresses extremely well. This generally isn't edited in place, it's copied back and forth to the user installation with [copy-world.sh](copy_world.sh). 
 
-## doc/
+`doc/`
 
 Documentation/notes for the project
 
-## docker/
+`docker/`
 
 Files required to build docker image for CI. 
 
-## test/
+`test/`
 
 All automated tests written for the CPU. These are mostly handled through [riscof](https://github.com/riscv-software-src/riscof). This consists of both the computerraria plugin as well as a reference plugin ([sail_cSim](test/sail_cSim/)) to compare the results to. 
 
-## tinterface/
+`tinterface/`
 
 Interfaces programmatically with running Terraria instance. This consists of both a python module as well as a command line wrapper to upload binaries, start execution and manipulate other fine grain controls without needing a GUI. 
 
