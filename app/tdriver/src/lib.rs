@@ -1,42 +1,13 @@
 #![no_std]
-#![no_main]
-
-// #![allow(stable_features)]
-// #![feature(core_intrinsics)]
 
 use core::panic::PanicInfo;
 use core::arch::asm;
-// use core::ptr;
 
-static RODATA: &[u8] = b"Hello, world!";
-static mut BSS: u8 = 0;
-static mut DATA: u16 = 1;
-static mut A: u8 = 1;
-static mut B: u8 = 1;
+pub mod graphics;
 
-// Entry point of user code
-#[no_mangle]
-fn main() {
-    let _x = RODATA;
-    let _y = unsafe { &BSS };
-    let _z = unsafe { &DATA };
-    let screen: *mut u32 = 0x1E000 as *mut u32;
-    let screen_write: *mut u32 = 0x1E1FC as *mut u32;
-    unsafe {
-        // let (mut a, mut b) = (1, 1);
-        loop {
-            // (b, a) = (a, a+b);
-            for i in 0..96 {
-                for j in 0..32 {
-                    screen.add(i).write_volatile(1 << j);
-                    screen_write.write_volatile(1);
-                }
-                screen.add(i).write_volatile(0);
-            }
-        }
-    }
-}
-
+/******************************************************************************
+ * Reset handling
+ ******************************************************************************/
 
 // Entry point of program
 // Sets up abi and initializes memory
@@ -90,3 +61,21 @@ pub unsafe extern "C" fn Reset() -> ! {
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
+
+/******************************************************************************
+ * Macros
+ ******************************************************************************/
+
+#[macro_export]
+macro_rules! entry {
+    ($path:path) => {
+        #[export_name = "main"]
+        pub unsafe fn __main() -> ! {
+            // type check the given path
+            let f: fn() -> ! = $path;
+
+            f()
+        }
+    }
+}
+
