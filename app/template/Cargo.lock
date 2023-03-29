@@ -3,12 +3,12 @@
 version = 3
 
 [[package]]
-name = "example"
+name = "tdriver"
+version = "0.1.0"
+
+[[package]]
+name = "template"
 version = "0.1.0"
 dependencies = [
  "tdriver",
 ]
-
-[[package]]
-name = "tdriver"
-version = "0.1.0"

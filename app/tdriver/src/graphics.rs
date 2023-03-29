@@ -21,18 +21,21 @@ pub const WORDS: usize = WIDTH / 32;
 /**
  * Writes a pixel array into screen as implemented in hardware
  */
-// pub fn write_raw(pixels: &[[u32; WORDS]; HEIGHT]) {
-//     unsafe {
-//         for w in 0..WORDS {
-//             for h in 0..HEIGHT{
-//                 SCREEN_BASE.add(w + WORDS * h).write_volatile(pixels[h][w]);
-//             }
-//         }
-//     }
-// }
+pub fn write_raw(pixels: &[[u32; WORDS]; HEIGHT]) {
+    unsafe {
+        for w in 0..WORDS {
+            for h in 0..HEIGHT{
+                SCREEN_BASE.add(w + WORDS * h).write_volatile(pixels[h][w]);
+            }
+        }
+    }
+}
 
 
-pub fn write_raw(pixels: &[u64; HEIGHT]) {
+/**
+ * Equivalent to write_raw except with u64 instead of [u32; 2]
+ */
+pub fn write_long(pixels: &[u64; HEIGHT]) {
     unsafe {
         for h in 0..HEIGHT{
             SCREEN_BASE.add(2 * h).write_volatile(pixels[h] as u32);
