@@ -37,7 +37,7 @@ pub fn write_raw(pixels: &[[u32; WORDS]; HEIGHT]) {
  */
 pub fn write_long(pixels: &[u64; HEIGHT]) {
     unsafe {
-        for h in 0..HEIGHT{
+        for h in 0..pixels.len(){
             SCREEN_BASE.add(2 * h).write_volatile(pixels[h] as u32);
             SCREEN_BASE.add(2 * h + 1).write_volatile((pixels[h] >> 32) as u32);
         }
