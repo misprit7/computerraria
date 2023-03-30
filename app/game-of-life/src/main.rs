@@ -6,26 +6,26 @@ use tdriver::graphics;
 
 entry!(main);
 
-
 fn update_board(board: &mut [u64; graphics::HEIGHT]) {
-    for r in 0..board.len() {
-        for c in 0..64 {
+    for r in 0..10 {
+        // let c = 1;
+        for c in 0..10 {
             let cur_state = (board[r] >> c) & 0b1;
-            let start_i = if r > 0 {-1} else {0};
-            let end_i = if r + 1 < board.len() {1} else {0};
+            let start_i = if r > 0 {r-1} else {r};
+            let end_i = if r + 1 < board.len() {r+1} else {r};
 
-            let start_j = if c > 0 {-1} else {0};
-            let end_j = if c + 1 < 64 {1} else {0};
+            let start_j = if c > 0 {c-1} else {c};
+            let end_j = if c + 1 < 64 {c+1} else {c};
 
             let mut neighbors_alive = 0;
             for i in start_i..=end_i {
-                for j in start_j..end_j {
-                    if i == 0 && j == 0 { continue }
-                    neighbors_alive += (board[(r as i32 + i) as usize] >> (c+j)) & 0b1;
+                for j in start_j..=end_j {
+                    if i == r && j == c { continue }
+                    neighbors_alive += (board[i] >> j) & 0b1;
                 }
             }
             if cur_state == 1 {
-                if neighbors_alive < 2 || cur_state > 3 {
+                if neighbors_alive < 2 || neighbors_alive > 3 {
                     board[r] &= !(0b1 << c);
                 }
             } else {
@@ -41,13 +41,13 @@ fn update_board(board: &mut [u64; graphics::HEIGHT]) {
 fn main() -> ! {
     let mut board: [u64; graphics::HEIGHT] = [
         0b0000000000000000000000000000000000000000000000000000000000000000,
-        0b0111000000000000000000000000000000000000000000000000000000000000,
+        0b0000000000000000000000000000000000000000000000000000000100000100,
+        0b0000000000000000000000000000000000000000000000000000000100011000,
+        0b0000000000000000000000000000000000000000000000000000000100001100,
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
-        0b0000001000000000000000000000000000000000000000000000000000000000,
-        0b0000001000000000000000000000000000000000000000000000000000000000,
-        0b0000001000000000000000000000000000000000000000000000000000000000,
+        0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
@@ -89,15 +89,12 @@ fn main() -> ! {
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
     ];
-    // graphics::sanity_check();
-    // graphics::write_long(&board);
-    // graphics::update();
-    let arr: [u64; graphics::HEIGHT] = [0xF00000000000000F; graphics::HEIGHT];
-    graphics::write_long(&arr);
+    // let arr: [u64; graphics::HEIGHT] = [0xF00000000000000F; graphics::HEIGHT];
+    graphics::write_long(&board);
     graphics::update();
     loop {
-        // update_board(&mut board);
-        // graphics::write_long(&board);
-        // graphics::update();
+        update_board(&mut board);
+        graphics::write_long(&board);
+        graphics::update();
     }
 }

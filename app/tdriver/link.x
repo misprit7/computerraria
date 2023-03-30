@@ -13,7 +13,8 @@ SECTIONS
 {
   .text :
   {
-    *(.text.start);
+    KEEP(*(.text.start));
+    *(.text.reset);
     *(.text .text.*);
   } > FLASH
 
