@@ -1,7 +1,8 @@
 #![no_std]
 
 use core::panic::PanicInfo;
-use core::arch::asm;
+use core::arch::global_asm;
+use core::ptr;
 
 pub mod graphics;
 
@@ -9,17 +10,17 @@ pub mod graphics;
  * Reset handling
  ******************************************************************************/
 
+// Init stack pointer
+global_asm!("
+    .section .text.start
+    la sp, _stack_start
+");
+
 // Entry point of program
 // Sets up abi and initializes memory
 #[no_mangle]
-#[link_section = ".text.start"]
+#[link_section = ".text.reset"]
 unsafe extern "C" fn Reset() -> ! {
-
-    // Init stack pointer
-    // Untested, very possible I'm not doing this right
-    asm!(
-        "la sp, _stack_start"
-    );
 
     // Initialize RAM
     extern "C" {
@@ -34,22 +35,22 @@ unsafe extern "C" fn Reset() -> ! {
     // custom memcpy implementation for size
     // These are not good for alignment, TODO: improve these or replace
     let count = &_ebss as *const u8 as usize - &_sbss as *const u8 as usize;
-    // ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
-    let mut p = &mut _sbss as *mut u8;
-    for _ in 0..count {
-        *p = 0;
-        p = p.add(1);
-    }
+    ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
+    // let mut p = &mut _sbss as *mut u8;
+    // for _ in 0..count {
+    //     *p = 0;
+    //     p = p.add(1);
+    // }
 
     let count = &_edata as *const u8 as usize - &_sdata as *const u8 as usize;
-    // ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, count);
-    let mut p1 = &_sidata as *const u8;
-    let mut p2 = &mut _sdata as *mut u8;
-    for _ in 0..count {
-        *p2 = *p1;
-        p1 = p1.add(1);
-        p2 = p2.add(1);
-    }
+    ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, count);
+    // let mut p1 = &_sidata as *const u8;
+    // let mut p2 = &mut _sdata as *mut u8;
+    // for _ in 0..count {
+    //     *p2 = *p1;
+    //     p1 = p1.add(1);
+    //     p2 = p2.add(1);
+    // }
 
     extern "Rust" {
         fn main() -> !;

@@ -3,15 +3,17 @@ name = "tdriver"
 version = "0.1.0"
 edition = "2021"
 
+# Dev is just the same as release since debug info is useless anyways
 [profile.dev]
+debug = false
 panic = "abort"
 opt-level = "z"
-# strip="symbols"
+overflow-checks = false
+lto = true
 
 [profile.release]
 panic = "abort"
 opt-level = "z"
-# strip="symbols"
+overflow-checks = false
+lto = true
 
-
-[dependencies]
