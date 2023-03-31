@@ -89,12 +89,13 @@ fn main() -> ! {
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
     ];
-    // let arr: [u64; graphics::HEIGHT] = [0xF00000000000000F; graphics::HEIGHT];
-    graphics::write_long(&board);
-    graphics::update();
+
+    let mut screen = graphics::init();
+    graphics::write_long(&mut screen, &board);
+    graphics::update(&mut screen);
     loop {
         update_board(&mut board);
-        graphics::write_long(&board);
-        graphics::update();
+        graphics::write_long(&mut screen, &board);
+        graphics::update(&mut screen);
     }
 }

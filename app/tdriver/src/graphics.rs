@@ -1,14 +1,17 @@
+
 #[cfg(not(target_arch = "riscv32"))]
 use {
     tui::{
-        backend::CrosstermBackend, 
+        backend::{Backend, CrosstermBackend},
+        layout::{Constraint, Direction, Layout, Rect},
         widgets::{
             Block, Borders,
-            canvas::{Canvas},
+            canvas::{Canvas, Rectangle},
         },
-        Terminal,
+        style::Color,
+        Terminal, symbols, Frame,
     },
-    std::{io, thread, time::Duration},
+    std::{io, time::Duration},
     crossterm::{
         event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
         execute,
@@ -52,15 +55,7 @@ pub struct Screen {
 
 #[cfg(not(target_arch = "riscv32"))]
 fn write_screen(screen: &mut Screen) {
-    screen.terminal.draw(|f| {
-        let size = f.size();
-        let canvas = Canvas::default()
-            .block(Block::default().borders(Borders::ALL).title("Screen"))
-            .paint(|_| {})
-            .x_bounds([0.0, WIDTH as f64])
-            .y_bounds([0.0, HEIGHT as f64]);
-        f.render_widget(canvas, size);
-    }).unwrap();
+    screen.terminal.draw(|f| { ui(f, &screen.state) }).unwrap();
     if event::poll(screen.timeout).unwrap() {
         if let Event::Key(key) = event::read().unwrap() {
             match key.code { 
@@ -78,6 +73,47 @@ fn write_screen(screen: &mut Screen) {
             }
         }
     }
+}
+
+#[cfg(not(target_arch = "riscv32"))]
+fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
+    let vertical_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(HEIGHT as u16), Constraint::Min(0)
+            ].as_ref()
+        )
+        .split(f.size());
+
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Length((WIDTH * 2) as u16), Constraint::Min(0)
+            ].as_ref()
+        )
+        .split(vertical_chunks[0]);
+
+    let canvas = Canvas::default()
+        .marker(symbols::Marker::Block)
+        .block(Block::default().borders(Borders::ALL).title("Screen"))
+        .paint(|ctx| {
+            for h in 0..state.len() {
+                for w in 0..state[0].len() {
+                    if state[h][w] {
+                        ctx.draw(&Rectangle {
+                            x: w as f64, y: h as f64,
+                            width: 1.0, height: 1.0,
+                            color: Color::White
+                        });
+                    }
+                }
+            }
+        })
+        .x_bounds([0.0, WIDTH as f64])
+        .y_bounds([0.0, HEIGHT as f64]);
+    f.render_widget(canvas, chunks[0]);
 }
 
 /******************************************************************************
@@ -106,7 +142,7 @@ pub fn init() -> Screen {
     let mut screen = Screen { 
         terminal,
         state: [[false; WIDTH]; HEIGHT],
-        timeout: Duration::from_millis(100)
+        timeout: Duration::from_millis(500)
     };
 
     write_screen(&mut screen);
@@ -117,7 +153,7 @@ pub fn init() -> Screen {
 /**
  * Writes a pixel array into screen as implemented in hardware
  */
-pub fn write_raw(screen: &Screen, pixels: &[[u32; WORDS]; HEIGHT]) {
+pub fn write_raw(screen: &mut Screen, pixels: &[[u32; WORDS]; HEIGHT]) {
 
 #[cfg(target_arch = "riscv32")] {
     unsafe {
@@ -130,14 +166,18 @@ pub fn write_raw(screen: &Screen, pixels: &[[u32; WORDS]; HEIGHT]) {
 }
 
 #[cfg(not(target_arch = "riscv32"))] {
-    // println!("test");
+    for h in 0..screen.state.len() {
+        for w in 0..screen.state[0].len() {
+            screen.state[h][w] = (pixels[w/32][h] >> (w%32)) & 0b1 == 1
+        }
+    }
 }}
 
 
 /**
  * Equivalent to write_raw except with u64 instead of [u32; 2]
  */
-pub fn write_long(screen: &Screen, pixels: &[u64; HEIGHT]) {
+pub fn write_long(screen: &mut Screen, pixels: &[u64; HEIGHT]) {
 
 #[cfg(target_arch = "riscv32")] {
     unsafe {
@@ -149,13 +189,17 @@ pub fn write_long(screen: &Screen, pixels: &[u64; HEIGHT]) {
 }
 
 #[cfg(not(target_arch = "riscv32"))] {
-    // println!("test");
+    for h in 0..screen.state.len() {
+        for w in 0..screen.state[0].len() {
+            screen.state[h][w] = (pixels[h] >> w) & 0b1 == 1
+        }
+    }
 }}
 
 /**
  * Updates screen by writing to screen register
  */
-pub fn update(screen: &Screen) {
+pub fn update(screen: &mut Screen) {
 
 #[cfg(target_arch = "riscv32")] {
     unsafe {
@@ -164,7 +208,7 @@ pub fn update(screen: &Screen) {
 }
 
 #[cfg(not(target_arch = "riscv32"))] {
-
+    write_screen(screen);
 }}
 
 /******************************************************************************
