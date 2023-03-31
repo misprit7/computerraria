@@ -1,8 +1,13 @@
-#![no_std]
+// Conditional version of #![no_std]
+#![cfg_attr(target_arch = "riscv32", no_std)]
 
-use core::panic::PanicInfo;
-use core::arch::global_asm;
-use core::ptr;
+#[cfg(target_arch = "riscv32")]
+use {
+    core::arch::global_asm,
+    core::panic::PanicInfo,
+    core::ptr,
+};
+
 
 pub mod graphics;
 
@@ -11,6 +16,7 @@ pub mod graphics;
  ******************************************************************************/
 
 // Init stack pointer
+#[cfg(target_arch = "riscv32")]
 global_asm!("
     .section .text.start
     la sp, _stack_start
@@ -20,6 +26,7 @@ global_asm!("
 // Sets up abi and initializes memory
 #[no_mangle]
 #[link_section = ".text.reset"]
+#[cfg(target_arch = "riscv32")]
 unsafe extern "C" fn Reset() -> ! {
 
     // Initialize RAM
@@ -60,9 +67,20 @@ unsafe extern "C" fn Reset() -> ! {
 }
 
 #[panic_handler]
+#[cfg(target_arch = "riscv32")]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
+
+
+// #[cfg(not(target_arch = "riscv32"))]
+// fn main() {
+//     extern "Rust" {
+//         fn main() -> !;
+//     }
+
+//     unsafe { main() }
+// }
 
 /******************************************************************************
  * Macros
