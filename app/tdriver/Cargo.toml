@@ -19,6 +19,6 @@ overflow-checks = false
 lto = true
 
 [target.'cfg(not(target_arch = "riscv32"))'.dependencies]
-tui = "0.19.0"
+tui = { package = "ratatui" }
 crossterm = "0.25"
 
