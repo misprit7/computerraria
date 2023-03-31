@@ -11,9 +11,14 @@ opt-level = "z"
 overflow-checks = false
 lto = true
 
+# [target.'cfg(target_arch="riscv32")'.profile.release]
 [profile.release]
 panic = "abort"
 opt-level = "z"
 overflow-checks = false
 lto = true
+
+[target.'cfg(not(target_arch = "riscv32"))'.dependencies]
+tui = "0.19.0"
+crossterm = "0.25"
 

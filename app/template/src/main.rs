@@ -9,8 +9,9 @@ entry!(main);
 // Entry point of user code
 fn main() -> ! {
     let arr: [u64; graphics::HEIGHT] = [0xF00000000000000F; graphics::HEIGHT];
+    let screen = graphics::init();
     loop {
-        graphics::write_long(&arr);
-        graphics::update();
+        graphics::write_long(&screen, &arr);
+        graphics::update(&screen);
     }
 }
