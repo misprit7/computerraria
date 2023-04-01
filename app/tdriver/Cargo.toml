@@ -3,15 +3,22 @@ name = "tdriver"
 version = "0.1.0"
 edition = "2021"
 
+# Dev is just the same as release since debug info is useless anyways
 [profile.dev]
+debug = false
 panic = "abort"
 opt-level = "z"
-# strip="symbols"
+overflow-checks = false
+lto = true
 
+# [target.'cfg(target_arch="riscv32")'.profile.release]
 [profile.release]
 panic = "abort"
 opt-level = "z"
-# strip="symbols"
+overflow-checks = false
+lto = true
 
+[target.'cfg(not(target_arch = "riscv32"))'.dependencies]
+tui = { package = "ratatui" }
+crossterm = "0.25"
 
-[dependencies]
