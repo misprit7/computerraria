@@ -1,0 +1,28 @@
+{
+  "configurations": {
+    "Launch": {
+      "adapter": "vscode-cpptools",
+      "filetypes": [ "cpp", "c", "objc", "rust" ],
+      "configuration": {
+        "request": "launch",
+        "program": "${workspaceRoot}/target/x86_64-unknown-linux-gnu/debug/game-of-life",
+        "args": [],
+        "cwd": ".",
+        "environment": [],
+        "externalConsole": true,
+        "MIMode": "gdb",
+        "stopAtEntry": true
+      }
+    },
+    "Attach": {
+      "adapter": "vscode-cpptools",
+      "filetypes": [ "cpp", "c", "objc", "rust" ],
+      "configuration": {
+        "request": "attach",
+        "program": "${workspaceRoot}/target/x86_64-unknown-linux-gnu/debug/game-of-life",
+        "MIMode": "gdb",
+        "stopAtEntry": true
+      }
+    }
+  }
+}
