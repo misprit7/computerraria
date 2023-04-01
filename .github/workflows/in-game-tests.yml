@@ -1,5 +1,5 @@
-name: In Game Tests
-run-name: In Game Tests
+name: Compliance Tests
+run-name: Compliance Tests
 on: 
   push:
     paths:
