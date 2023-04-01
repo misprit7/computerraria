@@ -6,18 +6,13 @@ edition = "2021"
 [dependencies]
 tdriver = { path = "../tdriver" }
 
-[target.'cfg(target_arch = "riscv32")'.profile.dev]
-debug = false
-panic = "abort"
-opt-level = "s"
-overflow-checks = false
-lto = true
-
-[target.'cfg(not(target_arch = "riscv32"))'.profile.dev]
+# Don't ever use this for riscv builds or they will be massive
+[profile.dev]
 
 [profile.release]
 panic = "abort"
-opt-level = "s"
+# Use either 2, 3, s or z
+opt-level = 3
 overflow-checks = false
 lto = true
 

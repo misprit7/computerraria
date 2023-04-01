@@ -1,0 +1,31 @@
+name: Rust
+run-name: Rust Tests
+on: 
+  push:
+    paths:
+      - 'app/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout computerraria
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Build
+      run: |
+        for i in app/* ; do
+          if [ -d "$i" ]; then
+            echo "Building $i" &&
+            cargo build --verbose --manifest-path="$i/Cargo.toml"
+          fi
+        done
+
+
