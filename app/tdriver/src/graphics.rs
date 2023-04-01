@@ -3,7 +3,7 @@
 use {
     tui::{
         backend::{Backend, CrosstermBackend},
-        layout::{Constraint, Direction, Layout, Rect},
+        layout::{Constraint, Direction, Layout},
         widgets::{
             Block, Borders,
             canvas::{Canvas, Rectangle},
@@ -121,7 +121,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
  ******************************************************************************/
 
 /**
- * Initializes screen and returns screeiguration struct
+ * Initializes screen and returns screen struct
  */
 pub fn init() -> Screen {
 

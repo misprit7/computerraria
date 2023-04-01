@@ -2,6 +2,6 @@
 rustflags = ["-C", "link-arg=-Tlink.x"]
 
 [build]
-# target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu"]
-target = ["x86_64-unknown-linux-gnu"]
+target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu"]
+# target = ["x86_64-unknown-linux-gnu"]
 
