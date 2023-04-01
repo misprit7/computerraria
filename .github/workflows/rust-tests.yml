@@ -1,5 +1,5 @@
-name: Rust
-run-name: Rust Tests
+name: Rust Apps
+run-name: Rust Apps
 on: 
   push:
     paths:
@@ -16,8 +16,6 @@ jobs:
     steps:
     - name: Checkout computerraria
       uses: actions/checkout@v3
-      with:
-        submodules: recursive
 
     - name: Build
       run: |
