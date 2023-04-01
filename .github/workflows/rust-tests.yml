@@ -4,12 +4,14 @@ on:
   push:
     paths:
       - 'app/**'
+    branches:
+    - main
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  Build:
 
     runs-on: ubuntu-latest
 

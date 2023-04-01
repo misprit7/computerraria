@@ -6,6 +6,8 @@ on:
     - 'computer.wld'
     - 'test/**'
     - 'tinterface/**'
+    branches:
+    - main
   repository_dispatch:
   workflow_dispatch:
 

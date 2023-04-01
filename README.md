@@ -7,8 +7,11 @@
   A fully compliant RISC-V computer inside Terraria
 </h2>
 <div align="center">
-  <a href=https://github.com/misprit7/computerraria/actions/workflows/tests.yml>
-    <img src=https://github.com/misprit7/computerraria/actions/workflows/tests.yml/badge.svg/>
+  <a href=https://github.com/misprit7/computerraria/actions/workflows/in-game-tests.yml>
+    <img src=https://github.com/misprit7/computerraria/actions/workflows/in-game-tests.yml/badge.svg/>
+  </a>
+  <a href=https://github.com/misprit7/computerraria/actions/workflows/rust-tests.yml>
+    <img src=https://github.com/misprit7/computerraria/actions/workflows/rust-tests.yml/badge.svg/>
   </a>
 </div>
 
