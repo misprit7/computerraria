@@ -1,4 +1,3 @@
-
 #[cfg(not(target_arch = "riscv32"))]
 use {
     tui::{
@@ -11,7 +10,7 @@ use {
         style::Color,
         Terminal, symbols, Frame,
     },
-    std::{io, time::Duration},
+    std::{io, time::{Duration, Instant}, process},
     crossterm::{
         event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
         execute,
@@ -35,6 +34,9 @@ pub const WORDS: usize = WIDTH / 32;
  * Types
  ******************************************************************************/
 
+/**
+ * Struct describing the current state of screen
+ */
 pub struct Screen {
     #[cfg(target_arch = "riscv32")]
     base_addr: *mut u32,
@@ -46,8 +48,11 @@ pub struct Screen {
     #[cfg(not(target_arch = "riscv32"))]
     state: [[bool; WIDTH]; HEIGHT],
     #[cfg(not(target_arch = "riscv32"))]
-    timeout: Duration
+    tick_rate: Duration,
+    #[cfg(not(target_arch = "riscv32"))]
+    last_tick: Instant,
 }
+
 
 /******************************************************************************
  * x86 HAL
@@ -55,24 +60,28 @@ pub struct Screen {
 
 #[cfg(not(target_arch = "riscv32"))]
 fn write_screen(screen: &mut Screen) {
+    while screen.last_tick.elapsed() < screen.tick_rate {
     screen.terminal.draw(|f| { ui(f, &screen.state) }).unwrap();
-    if event::poll(screen.timeout).unwrap() {
-        if let Event::Key(key) = event::read().unwrap() {
-            match key.code { 
-                KeyCode::Char('q') => {
-                    disable_raw_mode().unwrap();
-                    execute!(
-                        screen.terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    ).unwrap();
-                    screen.terminal.show_cursor().unwrap();
-                    return
-                }, 
-                _ => {}
+        if event::poll(screen.tick_rate).unwrap() {
+            if let Event::Key(key) = event::read().unwrap() {
+                match key.code { 
+                    KeyCode::Char('q') => {
+                        disable_raw_mode().unwrap();
+                        execute!(
+                            screen.terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        ).unwrap();
+                        screen.terminal.show_cursor().unwrap();
+                        process::exit(0)
+                    }, 
+                    _ => {}
+                }
             }
         }
     }
+
+    screen.last_tick = Instant::now();
 }
 
 #[cfg(not(target_arch = "riscv32"))]
@@ -142,7 +151,8 @@ pub fn init() -> Screen {
     let mut screen = Screen { 
         terminal,
         state: [[false; WIDTH]; HEIGHT],
-        timeout: Duration::from_millis(500)
+        tick_rate: Duration::from_millis(500),
+        last_tick: Instant::now()
     };
 
     write_screen(&mut screen);
@@ -219,7 +229,7 @@ pub fn update(screen: &mut Screen) {
  * Sanity check to ensure all pixels in screen work by running a pixel accross the entire screen
  *
  * This is kept as super low level/hardcoded intentionally to prevent other stuff in this module
- * from breaking this, might change this later when I'm more screeident in my code
+ * from breaking this, might change this later when I'm more confident in my code
  */
 #[cfg(target_arch = "riscv32")]
 pub fn sanity_check() {

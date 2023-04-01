@@ -6,3 +6,10 @@ target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu"]
 # target = ["x86_64-unknown-linux-gnu"]
 # target = ["x86_64-unknown-linux-gnu", "riscv32i-unknown-none-elf"]
 
+[alias]
+rbuild = "build --target riscv32i-unknown-none-elf --release"
+xbuild = "build --target x86_64-unknown-linux-gnu"
+
+rdoc = "doc --target riscv32i-unknown-none-elf --release"
+xdoc = "doc --target x86_64-unknown-linux-gnu"
+
