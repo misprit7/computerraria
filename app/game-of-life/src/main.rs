@@ -3,13 +3,15 @@
 
 use tdriver::entry;
 use tdriver::graphics;
+use tdriver::graphics::HEIGHT;
 
 entry!(main);
 
-fn update_board(board: &mut [u64; graphics::HEIGHT]) {
-    for r in 0..10 {
+fn update_board(board: &[u64; graphics::HEIGHT]) -> [u64; graphics::HEIGHT] {
+    let mut board_next: [u64; graphics::HEIGHT] = [0; graphics::HEIGHT];
+    for r in 0..graphics::HEIGHT {
         // let c = 1;
-        for c in 0..10 {
+        for c in 0..graphics::WIDTH {
             let cur_state = (board[r] >> c) & 0b1;
             let start_i = if r > 0 {r-1} else {r};
             let end_i = if r + 1 < board.len() {r+1} else {r};
@@ -26,15 +28,20 @@ fn update_board(board: &mut [u64; graphics::HEIGHT]) {
             }
             if cur_state == 1 {
                 if neighbors_alive < 2 || neighbors_alive > 3 {
-                    board[r] &= !(0b1 << c);
+                    board_next[r] &= !(0b1 << c);
+                } else {
+                    board_next[r] |= 0b1 << c;
                 }
             } else {
                 if neighbors_alive == 3 {
-                    board[r] |= 0b1 << c;
+                    board_next[r] |= 0b1 << c;
+                } else {
+                    board_next[r] &= !(0b1 << c);
                 }
             }
         }
     }
+    board_next
 }
 
 // Entry point of user code
@@ -89,12 +96,18 @@ fn main() -> ! {
         0b0000000000000000000000000000000000000000000000000000000000000000,
         0b0000000000000000000000000000000000000000000000000000000000000000,
     ];
-
     let mut screen = graphics::init();
     graphics::write_long(&mut screen, &board);
     graphics::update(&mut screen);
     loop {
-        update_board(&mut board);
+        // for i in 0..48 {
+        //     for j in 0..64 {
+        //         board[i] = 1 <<j;
+        //         graphics::write_long(&mut screen, &board);
+        //         graphics::update(&mut screen);
+        //     }
+        // }
+        board = update_board(&board);
         graphics::write_long(&mut screen, &board);
         graphics::update(&mut screen);
     }

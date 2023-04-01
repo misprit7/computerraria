@@ -81,7 +81,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Length(HEIGHT as u16), Constraint::Min(0)
+                Constraint::Length((HEIGHT+3) as u16), Constraint::Min(0)
             ].as_ref()
         )
         .split(f.size());
@@ -90,13 +90,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
         .direction(Direction::Horizontal)
         .constraints(
             [
-                Constraint::Length((WIDTH * 2) as u16), Constraint::Min(0)
+                Constraint::Length(((WIDTH+1) * 2) as u16), Constraint::Min(0)
             ].as_ref()
         )
         .split(vertical_chunks[0]);
 
     let canvas = Canvas::default()
-        .marker(symbols::Marker::Block)
+        .marker(symbols::Marker::Braille)
         .block(Block::default().borders(Borders::ALL).title("Screen"))
         .paint(|ctx| {
             for h in 0..state.len() {

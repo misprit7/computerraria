@@ -6,13 +6,14 @@ edition = "2021"
 [dependencies]
 tdriver = { path = "../tdriver" }
 
-# Dev is just the same as release since debug info is useless anyways
-[profile.dev]
+[target.'cfg(target_arch = "riscv32")'.profile.dev]
 debug = false
 panic = "abort"
 opt-level = "s"
 overflow-checks = false
 lto = true
+
+[target.'cfg(not(target_arch = "riscv32"))'.profile.dev]
 
 [profile.release]
 panic = "abort"
