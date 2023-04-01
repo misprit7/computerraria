@@ -16,6 +16,8 @@ pub mod graphics;
  ******************************************************************************/
 
 // Init stack pointer
+// This has to be before Reset in linker script since otherwise function can't
+// enter
 #[cfg(target_arch = "riscv32")]
 global_asm!("
     .section .text.start
@@ -39,25 +41,12 @@ unsafe extern "C" fn Reset() -> ! {
         static _sidata: u8;
     }
 
-    // custom memcpy implementation for size
-    // These are not good for alignment, TODO: improve these or replace
+    // Copy static variables
     let count = &_ebss as *const u8 as usize - &_sbss as *const u8 as usize;
     ptr::write_bytes(&mut _sbss as *mut u8, 0, count);
-    // let mut p = &mut _sbss as *mut u8;
-    // for _ in 0..count {
-    //     *p = 0;
-    //     p = p.add(1);
-    // }
 
     let count = &_edata as *const u8 as usize - &_sdata as *const u8 as usize;
     ptr::copy_nonoverlapping(&_sidata as *const u8, &mut _sdata as *mut u8, count);
-    // let mut p1 = &_sidata as *const u8;
-    // let mut p2 = &mut _sdata as *mut u8;
-    // for _ in 0..count {
-    //     *p2 = *p1;
-    //     p1 = p1.add(1);
-    //     p2 = p2.add(1);
-    // }
 
     extern "Rust" {
         fn main() -> !;
@@ -71,16 +60,6 @@ unsafe extern "C" fn Reset() -> ! {
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
-
-
-// #[cfg(not(target_arch = "riscv32"))]
-// fn main() {
-//     extern "Rust" {
-//         fn main() -> !;
-//     }
-
-//     unsafe { main() }
-// }
 
 /******************************************************************************
  * Macros
