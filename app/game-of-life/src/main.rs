@@ -3,15 +3,14 @@
 
 use tdriver::entry;
 use tdriver::graphics;
-use tdriver::graphics::HEIGHT;
 
 entry!(main);
 
 fn update_board(board: &[u64; graphics::HEIGHT]) -> [u64; graphics::HEIGHT] {
     let mut board_next: [u64; graphics::HEIGHT] = [0; graphics::HEIGHT];
-    for r in 0..graphics::HEIGHT {
+    for r in 0..10 {
         // let c = 1;
-        for c in 0..graphics::WIDTH {
+        for c in 0..10 {
             let cur_state = (board[r] >> c) & 0b1;
             let start_i = if r > 0 {r-1} else {r};
             let end_i = if r + 1 < board.len() {r+1} else {r};
