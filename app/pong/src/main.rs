@@ -20,6 +20,7 @@ fn main() -> ! {
     let mut p_right = HEIGHT / 2;
     let p_size: usize = 5;
 
+    // Init paddles
     for i in p_left-p_size..=p_left+p_size {
         let data: u32 = 0x00000001;
         graphics::write_line(&mut screen, data, i, 0);
@@ -83,16 +84,22 @@ fn main() -> ! {
         graphics::write_line(&mut screen, (pixels[ball_pos.1 as usize] >> (32 * word)) as u32, ball_pos.1, word);
 
         // Update new ball position
-        if ball_pos.0 as i8 + ball_vel.0 < 0 || ball_pos.0 as i8 + ball_vel.0 >= WIDTH as i8 {
+        ball_pos = ((ball_pos.0 as i8 + ball_vel.0) as usize, (ball_pos.1 as i8 + ball_vel.1) as usize);
+
+        // If close snap to edge
+        if ball_vel.0 < 0 && ball_pos.0 <= -ball_vel.0 as usize + 1 { ball_pos.0 = 1; ball_vel.0 *= -1 }
+        if ball_vel.0 > 0 && ball_pos.0 >= WIDTH - ball_vel.0 as usize { ball_pos.0 = WIDTH-2; ball_vel.0 *= -1 }
+
+        // Bounce
+        if ball_pos.0 as i8 + ball_vel.0 < 0 {
+            ball_vel.0 *= -1;
+        }
+        else if ball_pos.0 as i8 + ball_vel.0 >= WIDTH as i8 {
             ball_vel.0 *= -1;
         }
         if ball_pos.1 as i8 + ball_vel.1 < 1 || ball_pos.1 as i8 + ball_vel.1 >= HEIGHT as i8 {
             ball_vel.1 *= -1;
         }
-        ball_pos = ((ball_pos.0 as i8 + ball_vel.0) as usize, (ball_pos.1 as i8 + ball_vel.1) as usize);
-        // if ball_pos.0 <= ball_vel.0 as usize { ball_pos.0 = 2 }
-        // if ball_pos.0 >= WIDTH - 1 + ball_vel.0 as usize { ball_pos.0 = WIDTH-2 }
-
         // Draw new ball
         word = ball_pos.0 / 32;
         pixels[ball_pos.1 as usize] |= 1 << ball_pos.0;

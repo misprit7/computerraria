@@ -151,7 +151,7 @@ pub fn init() -> Screen {
     let mut screen = Screen { 
         terminal,
         state: [[false; WIDTH]; HEIGHT],
-        tick_rate: Duration::from_millis(100),
+        tick_rate: Duration::from_millis(50),
         last_tick: Instant::now()
     };
 
