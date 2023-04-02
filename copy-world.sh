@@ -6,7 +6,7 @@
 
 case $1 in
     -t|--to)
-        cp ./computer.wld ~/.local/share/Terraria/tModLoader/Worlds/computer.wld
+        cp $(dirname "$0")/computer.wld ~/.local/share/Terraria/tModLoader/Worlds/computer.wld
         ;;
     -f|--from)
         cp ~/.local/share/Terraria/tModLoader/Worlds/computer.wld .
