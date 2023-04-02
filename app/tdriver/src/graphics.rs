@@ -61,11 +61,11 @@ pub struct Screen {
 #[cfg(not(target_arch = "riscv32"))]
 fn write_screen(screen: &mut Screen) {
     while screen.last_tick.elapsed() < screen.tick_rate {
-    screen.terminal.draw(|f| { ui(f, &screen.state) }).unwrap();
-        if event::poll(screen.tick_rate).unwrap() {
-            if let Event::Key(key) = event::read().unwrap() {
-                match key.code { 
-                    KeyCode::Char('q') => {
+        screen.terminal.draw(|f| { ui(f, &screen.state) }).unwrap();
+            if event::poll(Duration::from_millis(0)).unwrap() {
+                if let Event::Key(key) = event::read().unwrap() {
+                    match key.code { 
+                        KeyCode::Char('q') => {
                         disable_raw_mode().unwrap();
                         execute!(
                             screen.terminal.backend_mut(),
@@ -90,7 +90,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Length((HEIGHT+3) as u16), Constraint::Min(0)
+                Constraint::Length((HEIGHT) as u16), Constraint::Min(0)
             ].as_ref()
         )
         .split(f.size());
@@ -112,7 +112,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
                 for w in 0..state[0].len() {
                     if state[h][w] {
                         ctx.draw(&Rectangle {
-                            x: w as f64, y: h as f64,
+                            x: w as f64, y: HEIGHT as f64 - h as f64-1.0,
                             width: 1.0, height: 1.0,
                             color: Color::White
                         });
@@ -151,7 +151,7 @@ pub fn init() -> Screen {
     let mut screen = Screen { 
         terminal,
         state: [[false; WIDTH]; HEIGHT],
-        tick_rate: Duration::from_millis(500),
+        tick_rate: Duration::from_millis(50),
         last_tick: Instant::now()
     };
 
@@ -203,6 +203,23 @@ pub fn write_long(screen: &mut Screen, pixels: &[u64; HEIGHT]) {
         for w in 0..screen.state[0].len() {
             screen.state[h][w] = (pixels[h] >> w) & 0b1 == 1
         }
+    }
+}}
+
+/**
+ * Writes a line to screen at a specified row, word is 0 for lower word and 1 for upper
+ */
+pub fn write_line(screen: &mut Screen, data: u32, row: usize, word: usize) {
+
+#[cfg(target_arch = "riscv32")] {
+    unsafe {
+        screen.base_addr.add((2*row + word) as usize).write_volatile(data);
+    }
+}
+
+#[cfg(not(target_arch = "riscv32"))] {
+    for w in 0..32 {
+        screen.state[row as usize][(word * 32 + w) as usize] = (data >> w) & 0b1 == 1;
     }
 }}
 
