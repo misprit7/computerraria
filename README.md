@@ -40,6 +40,10 @@ With this installed, the current specs of the computer are as follows:
 - Ram: 96kb
 - Instruction set: rv32i
 
+As an example of what it can do, here is Pong, running purely on the in-game cpu (see [app/pong/src/main.rs](app/pong/src/main.rs) for implementation):
+
+https://user-images.githubusercontent.com/33139843/229342342-de4708e1-7467-4f99-834b-3d0fb28d0858.mp4
+
 # File Structure
 
 The major relevant parts of the project are as follows:
