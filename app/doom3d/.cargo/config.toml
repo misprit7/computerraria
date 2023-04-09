@@ -1,0 +1,26 @@
+[target.riscv32i-unknown-none-elf]
+rustflags = ["-C", "link-arg=-Tlink.x"]
+
+[build]
+target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu"]
+
+[alias]
+rbuild = "build --release --target riscv32i-unknown-none-elf"
+xbuild = "build --target x86_64-unknown-linux-gnu"
+rb = "rbuild"
+xb = "xbuild"
+
+rdoc = "doc --release --target riscv32i-unknown-none-elf"
+xdoc = "doc --target x86_64-unknown-linux-gnu"
+rd = "rdoc"
+xd = "xdoc"
+
+xrun = "run --target x86_64-unknown-linux-gnu"
+xr = "xrun"
+
+rsize = "size --release --target riscv32i-unknown-none-elf"
+rs = "rsize"
+
+robjdump = "objdump --release --target riscv32i-unknown-none-elf"
+rod = "robjdump"
+
