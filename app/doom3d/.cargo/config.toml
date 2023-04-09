@@ -1,5 +1,5 @@
 [target.riscv32i-unknown-none-elf]
-rustflags = ["-C", "link-arg=-Tlink.x"]
+rustflags = ["-C", "link-arg=-Tlink.x", "-C", "llvm-args=-ffast-math"]
 
 [build]
 target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu"]

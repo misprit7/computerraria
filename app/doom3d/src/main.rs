@@ -9,18 +9,20 @@ use tdriver::entry;
 use tdriver::graphics;
 use tdriver::graphics::Screen;
 
+use fixed::types::I16F16;
+
 entry!(main);
 
 fn main() -> ! {
     let mut screen = graphics::init();
-    let raycaster = raycaster::Raycaster::new(MAP, 60.0);
+    let raycaster = raycaster::Raycaster::new(MAP, I16F16::from_num(60.0));
     let mut pixels: [[bool; graphics::WIDTH]; graphics::HEIGHT] =
         [[false; graphics::WIDTH]; graphics::HEIGHT];
 
-    let mut angle = 0.0;
+    let mut angle = I16F16::const_from_int(0);
     loop {
-        raycaster.render(2.5, 3.5, angle, &mut pixels);
-        angle += 0.04;
+        raycaster.render(I16F16::from_num(2.5), I16F16::from_num(3.5), angle, &mut pixels);
+        angle += I16F16::from_num(0.04);
         update_screen(&mut screen, &pixels);
     }
 }
