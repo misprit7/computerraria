@@ -1,42 +1,26 @@
-// cargo run --target x86_64-pc-windows-msvc	
-
-// #![no_std]
+#![no_std]
 #![no_main]
 
-mod raycaster;
 mod maps;
+mod raycaster;
 
-use core::cmp::min;
-use core::ops::{Add, Mul};
+use maps::MAP;
 use tdriver::entry;
 use tdriver::graphics;
 use tdriver::graphics::Screen;
-use tdriver::graphics::HEIGHT;
-use tdriver::graphics::WIDTH;
-use raycaster::*;
-use maps::*;
-
-// const MAP: [[bool; raycaster::MAP_WIDTH]; raycaster::MAP_HEIGHT] =
-//     [[true, true, true, true, true], 
-//     [true, false, false, false, true],
-//     [true, false, false, false, true],
-//     [true, false, false, false, true],
-//     [true, true, true, true, true]];
 
 entry!(main);
 
 fn main() -> ! {
     let mut screen = graphics::init();
-    let raycaster = raycaster::Raycaster::new(BIG_MAP, 70.0);
-    let mut pixels: [[bool; graphics::WIDTH]; graphics::HEIGHT] = [[false; graphics::WIDTH]; graphics::HEIGHT];
-
-    // raycaster.render(1.5, 2.5, 0.0, &mut pixels);
+    let raycaster = raycaster::Raycaster::new(MAP, 60.0);
+    let mut pixels: [[bool; graphics::WIDTH]; graphics::HEIGHT] =
+        [[false; graphics::WIDTH]; graphics::HEIGHT];
 
     let mut angle = 0.0;
-
     loop {
-        raycaster.render(5.0, 5.0, angle, &mut pixels);
-        angle += 0.05;
+        raycaster.render(2.5, 3.5, angle, &mut pixels);
+        angle += 0.04;
         update_screen(&mut screen, &pixels);
     }
 }
