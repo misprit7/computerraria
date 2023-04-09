@@ -1,0 +1,18 @@
+[package]
+name = "doom3d"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tdriver = { path = "../tdriver" }
+
+# Don't ever use this for riscv builds or they will be massive
+[profile.dev]
+
+[profile.release]
+panic = "abort"
+# Use either 2, 3, s or z
+opt-level = 3
+overflow-checks = false
+lto = true
+
