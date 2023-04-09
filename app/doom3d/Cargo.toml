@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+libm = "0.2.6"
 tdriver = { path = "../tdriver" }
 
 # Don't ever use this for riscv builds or they will be massive

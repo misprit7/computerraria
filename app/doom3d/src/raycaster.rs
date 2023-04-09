@@ -1,5 +1,6 @@
 use core::cmp::{max, min};
 use tdriver::graphics;
+use libm;
 
 const PI: f32 = 3.1415926;
 pub const MAP_WIDTH: usize = 5;
@@ -22,7 +23,7 @@ impl Raycaster {
         let fov_rad = fov_deg * PI / 180.0;
         Raycaster {
             map,
-            tan_half_fov: (fov_rad / 2.0).tan(),
+            tan_half_fov: libm::tanf(fov_rad / 2.0),
         }
     }
 
@@ -103,32 +104,32 @@ impl Raycaster {
 
     fn screen_coord_to_angle_rad(&self, screen_coord: f32) -> f32 {
         // ooh magic
-        ((2.0 * screen_coord - 1.0) * self.tan_half_fov).atan()
+        libm::atanf((2.0 * screen_coord - 1.0) * self.tan_half_fov)
     }
 
     // DDA algorithm (https://www.youtube.com/watch?v=NbSee-XM7WA&ab_channel=javidx9)
     fn cast_ray(&self, start_x: f32, start_y: f32, ray_angle_rad: f32) -> Option<RayHit> {
-        let dir_x = ray_angle_rad.cos();
-        let dir_y = ray_angle_rad.sin();
-        let ray_unit_step_size_x = 1.0 / dir_x.abs(); // Length of step if moving 1 unit in x
-        let ray_unit_step_size_y = 1.0 / dir_y.abs(); // Length of step if moving 1 unit in y
+        let dir_x = libm::cosf(ray_angle_rad);
+        let dir_y = libm::sinf(ray_angle_rad);
+        let ray_unit_step_size_x = libm::fabsf(1.0 / dir_x); // Length of step if moving 1 unit in x
+        let ray_unit_step_size_y = libm::fabsf(1.0 / dir_y); // Length of step if moving 1 unit in y
 
         // Length of ray if next step is 1 unit in x (account for off-grid start)
         let mut ray_length_x = if dir_x >= 0.0 {
-            start_x.ceil() - start_x
+            libm::ceilf(start_x) - start_x
         } else {
-            start_x - start_x.floor()
+            start_x - libm::floorf(start_x)
         } * ray_unit_step_size_x;
 
         // Length of ray if next step is 1 unit in y (account for off-grid start)
         let mut ray_length_y = if dir_y >= 0.0 {
-            start_y.ceil() - start_y
+            libm::ceilf(start_y) - start_y
         } else {
-            start_y - start_y.floor()
+            start_y - libm::floorf(start_y)
         } * ray_unit_step_size_y;
 
-        let step_x = dir_x.signum() as i32;
-        let step_y = dir_y.signum() as i32;
+        let step_x = if dir_x > 0.0 {1} else {-1};
+        let step_y = if dir_y > 0.0 {1} else {-1};
         let mut idx_x = start_x as i32;
         let mut idx_y = start_y as i32;
 
@@ -140,8 +141,8 @@ impl Raycaster {
                     let ray_hit_x = ray_length * dir_x;
                     let ray_hit_y = ray_length * dir_y;
 
-                    let x_diff = (ray_hit_x - ray_hit_x.round()).abs();
-                    let y_diff = (ray_hit_y - ray_hit_y.round()).abs();
+                    let x_diff = libm::fabsf(ray_hit_x - libm::roundf(ray_hit_x));
+                    let y_diff = libm::fabsf(ray_hit_y - libm::roundf(ray_hit_y));
                     let normal_along_x = x_diff < y_diff;
 
                     return Some(RayHit {
