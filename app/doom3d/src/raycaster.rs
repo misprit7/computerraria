@@ -1,6 +1,6 @@
 use core::cmp::{max, min};
 use tdriver::graphics;
-use fixed::types::{I9F7, I4F12, I16F0, I16F16};
+use fixed::types::{I9F7, I5F11, I16F0, I16F16};
 use cordic;
 
 use fixed::prelude::*;
@@ -14,7 +14,7 @@ pub struct Raycaster {
 }
 
 struct RayHit {
-    length: I4F12,
+    length: I5F11,
     idx_x: usize,
     idx_y: usize,
     normal_along_x: bool,
@@ -22,22 +22,22 @@ struct RayHit {
 
 impl Raycaster {
     pub fn new(map: [[bool; MAP_WIDTH]; MAP_HEIGHT], fov_deg: I9F7) -> Self {
-        let fov_rad: I4F12 = (fov_deg * I9F7::PI).wide_div(I9F7::from_num(180.0)).to_num();
+        let fov_rad: I5F11 = (fov_deg * I9F7::PI).wide_div(I9F7::from_num(180.0)).to_num();
         Raycaster {
             map,
-            tan_half_fov: cordic::tan((fov_rad / 2.to_fixed::<I4F12>()).to_num::<I16F16>()).to_num(),
+            tan_half_fov: cordic::tan((fov_rad / 2.to_fixed::<I5F11>()).to_num::<I16F16>()).to_num(),
         }
     }
 
     pub fn render(
         &self,
-        start_x: I4F12,
-        start_y: I4F12,
-        cam_angle_rad: I4F12,
+        start_x: I5F11,
+        start_y: I5F11,
+        cam_angle_rad: I5F11,
         pixels: &mut [[bool; graphics::WIDTH]; graphics::HEIGHT],
     ) {
         let mut last_hit = RayHit {
-            length: I4F12::const_from_int(0),
+            length: I5F11::const_from_int(0),
             idx_x: 0,
             idx_y: 0,
             normal_along_x: false,
@@ -47,7 +47,7 @@ impl Raycaster {
         let mut last_on_wall = false;
 
         for x_pixel in 0..graphics::WIDTH {
-            let screen_coord: I4F12 = (I16F0::from_num(x_pixel)).wide_div(I16F0::const_from_int(graphics::WIDTH as i16)).to_num();
+            let screen_coord: I5F11 = (I16F0::from_num(x_pixel)).wide_div(I16F0::const_from_int(graphics::WIDTH as i16)).to_num();
             let ray_angle_rad = self.screen_coord_to_angle_rad(screen_coord) + cam_angle_rad;
             let hit = self.cast_ray(start_x, start_y, ray_angle_rad);
 
@@ -106,24 +106,21 @@ impl Raycaster {
         }
     }
 
-    fn screen_coord_to_angle_rad(&self, screen_coord: I4F12) -> I4F12 {
+    fn screen_coord_to_angle_rad(&self, screen_coord: I5F11) -> I5F11 {
         // ooh magic
-        let x = cordic::atan((2 * screen_coord - I4F12::const_from_int(1)).wide_mul(self.tan_half_fov));
-        let y: I4F12 = x.to_num();
-        y
+        cordic::atan((2 * screen_coord - I5F11::const_from_int(1)) * self.tan_half_fov.to_num::<I5F11>())
     }
 
     // DDA algorithm (https://www.youtube.com/watch?v=NbSee-XM7WA&ab_channel=javidx9)
-    fn cast_ray(&self, start_x: I4F12, start_y: I4F12, ray_angle_rad: I4F12) -> Option<RayHit> {
-        let dir_x = cordic::cos(ray_angle_rad);
-        let dir_y = cordic::sin(ray_angle_rad);
+    fn cast_ray(&self, start_x: I5F11, start_y: I5F11, ray_angle_rad: I5F11) -> Option<RayHit> {
+        let (dir_y, dir_x) = cordic::sin_cos(ray_angle_rad);
         let ray_unit_step_size_x = match dir_x.abs().checked_recip() {
             Some(v) => v,
-            None => I4F12::MAX
+            None => I5F11::MAX
         }; // Length of step if moving 1 unit in x
         let ray_unit_step_size_y = match dir_y.abs().checked_recip() {
             Some(v) => v,
-            None => I4F12::MAX
+            None => I5F11::MAX
         }; // Length of step if moving 1 unit in y
 
         // Length of ray if next step is 1 unit in x (account for off-grid start)
@@ -145,7 +142,7 @@ impl Raycaster {
         let mut idx_x = start_x.to_num::<i32>();
         let mut idx_y = start_y.to_num::<i32>();
 
-        let mut ray_length = I4F12::const_from_int(0);
+        let mut ray_length = I5F11::const_from_int(0);
         loop {
             if self.valid_map_idx(idx_x, idx_y) {
                 if self.map[idx_y as usize][idx_x as usize] {
