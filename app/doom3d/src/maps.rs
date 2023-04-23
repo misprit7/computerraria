@@ -1,4 +1,5 @@
-use crate::raycaster::{MAP_WIDTH, MAP_HEIGHT};
+pub const MAP_WIDTH: usize = 5;
+pub const MAP_HEIGHT: usize = 7;
 
 // pub const MAP: [[bool; MAP_WIDTH]; MAP_HEIGHT] =
 //     [[true, true, true], 
