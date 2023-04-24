@@ -64,7 +64,7 @@ impl Raycaster {
                 if (diagonal || far_away || new_normal || !last_on_wall) && x_pixel > 0 {
                     // hit a wall corner, draw a vertical line
                     for y_pixel in 0..graphics::HEIGHT {
-                        pixels[y_pixel][x_pixel] = y_pixel >= bottom && y_pixel <= max(top, last_top);
+                        pixels[y_pixel][x_pixel] = y_pixel >= min(bottom, last_bottom) && y_pixel <= max(top, last_top);
                     }
                 } else {
                     // hit a wall, draw top and bottom only
