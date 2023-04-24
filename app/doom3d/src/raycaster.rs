@@ -6,9 +6,10 @@ use cordic;
 
 use fixed::prelude::*;
 
+include!(concat!(env!("OUT_DIR"), "/pixel_to_ray_angle_lookup.rs"));
+
 pub struct Raycaster {
     map: [[bool; MAP_WIDTH]; MAP_HEIGHT],
-    tan_half_fov: I9F7,
 }
 
 struct RayHit {
@@ -19,11 +20,9 @@ struct RayHit {
 }
 
 impl Raycaster {
-    pub fn new(map: [[bool; MAP_WIDTH]; MAP_HEIGHT], fov_deg: I9F7) -> Self {
-        let fov_rad: I5F11 = (fov_deg * I9F7::PI).wide_div(I9F7::from_num(180.0)).to_num();
+    pub fn new(map: [[bool; MAP_WIDTH]; MAP_HEIGHT]) -> Self {
         Raycaster {
             map,
-            tan_half_fov: cordic::tan((fov_rad / 2.to_fixed::<I5F11>()).to_num::<I16F16>()).to_num(),
         }
     }
 
@@ -45,8 +44,7 @@ impl Raycaster {
         let mut last_on_wall = false;
 
         for x_pixel in 0..graphics::WIDTH {
-            let screen_coord: I5F11 = (I16F0::from_num(x_pixel)).wide_div(I16F0::const_from_int(graphics::WIDTH as i16)).to_num();
-            let ray_angle_rad = self.screen_coord_to_angle_rad(screen_coord) + cam_angle_rad;
+            let ray_angle_rad = PIXEL_TO_RAY_ANGLE_TABLE[x_pixel] + cam_angle_rad;
             let hit = self.cast_ray(start_x, start_y, ray_angle_rad);
 
             if let Some(hit) = hit {
@@ -98,11 +96,6 @@ impl Raycaster {
                 last_on_wall = false;
             }
         }
-    }
-
-    fn screen_coord_to_angle_rad(&self, screen_coord: I5F11) -> I5F11 {
-        // ooh magic
-        cordic::atan((2 * screen_coord - I5F11::const_from_int(1)) * self.tan_half_fov.to_num::<I5F11>())
     }
 
     // DDA algorithm (https://www.youtube.com/watch?v=NbSee-XM7WA&ab_channel=javidx9)
