@@ -9,18 +9,29 @@ use tdriver::entry;
 use tdriver::graphics;
 use tdriver::graphics::Screen;
 
+use fixed::types::{I5F11, I9F7};
+
 entry!(main);
 
 fn main() -> ! {
     let mut screen = graphics::init();
-    let raycaster = raycaster::Raycaster::new(MAP, 60.0);
+    let raycaster = raycaster::Raycaster::new(MAP, I9F7::from_num(60.0));
     let mut pixels: [[bool; graphics::WIDTH]; graphics::HEIGHT] =
         [[false; graphics::WIDTH]; graphics::HEIGHT];
 
-    let mut angle = 0.0;
+    let mut angle = I5F11::const_from_int(0);
+    let x = I5F11::from_num(2.5);
+    let y = I5F11::from_num(3.5);
+    // let mut forward = true;
     loop {
-        raycaster.render(2.5, 3.5, angle, &mut pixels);
-        angle += 0.04;
+        raycaster.render(x, y, angle, &mut pixels);
+        angle += I5F11::from_num(0.04);
+        angle %= 2 * I5F11::PI;
+        // if x < 2 { forward = false }
+        // if x > 3 { forward = true }
+        // if forward { x += I5F11::from_num(0.01) }
+        // else { x -= I5F11::from_num(0.01) }
+        // y += I5F11::from_num(0.01);
         update_screen(&mut screen, &pixels);
     }
 }
@@ -40,3 +51,6 @@ fn update_screen(screen: &mut Screen, pixels: &[[bool; graphics::WIDTH]; graphic
 
     graphics::update(screen);
 }
+
+
+

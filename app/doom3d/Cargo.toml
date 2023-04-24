@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cordic = "0.1.5"
+fixed = "1.23.1"
 libm = "0.2.6"
 tdriver = { path = "../tdriver" }
 
