@@ -15,7 +15,7 @@ entry!(main);
 
 fn main() -> ! {
     let mut screen = graphics::init();
-    let raycaster = raycaster::Raycaster::new(MAP, I9F7::from_num(60.0));
+    let raycaster = raycaster::Raycaster::new(MAP);
     let mut pixels: [[bool; graphics::WIDTH]; graphics::HEIGHT] =
         [[false; graphics::WIDTH]; graphics::HEIGHT];
 

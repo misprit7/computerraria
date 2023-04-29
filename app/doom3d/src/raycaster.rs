@@ -1,16 +1,15 @@
 use core::cmp::{max, min};
 use tdriver::graphics;
+use crate::maps::{MAP_WIDTH, MAP_HEIGHT};
 use fixed::types::{I9F7, I5F11, I16F0, I16F16};
 use cordic;
 
 use fixed::prelude::*;
 
-pub const MAP_WIDTH: usize = 5;
-pub const MAP_HEIGHT: usize = 7;
+include!(concat!(env!("OUT_DIR"), "/pixel_to_ray_angle_lookup.rs"));
 
 pub struct Raycaster {
     map: [[bool; MAP_WIDTH]; MAP_HEIGHT],
-    tan_half_fov: I9F7,
 }
 
 struct RayHit {
@@ -21,11 +20,9 @@ struct RayHit {
 }
 
 impl Raycaster {
-    pub fn new(map: [[bool; MAP_WIDTH]; MAP_HEIGHT], fov_deg: I9F7) -> Self {
-        let fov_rad: I5F11 = (fov_deg * I9F7::PI).wide_div(I9F7::from_num(180.0)).to_num();
+    pub fn new(map: [[bool; MAP_WIDTH]; MAP_HEIGHT]) -> Self {
         Raycaster {
             map,
-            tan_half_fov: cordic::tan((fov_rad / 2.to_fixed::<I5F11>()).to_num::<I16F16>()).to_num(),
         }
     }
 
@@ -47,8 +44,7 @@ impl Raycaster {
         let mut last_on_wall = false;
 
         for x_pixel in 0..graphics::WIDTH {
-            let screen_coord: I5F11 = (I16F0::from_num(x_pixel)).wide_div(I16F0::const_from_int(graphics::WIDTH as i16)).to_num();
-            let ray_angle_rad = self.screen_coord_to_angle_rad(screen_coord) + cam_angle_rad;
+            let ray_angle_rad = PIXEL_TO_RAY_ANGLE_TABLE[x_pixel] + cam_angle_rad;
             let hit = self.cast_ray(start_x, start_y, ray_angle_rad);
 
             if let Some(hit) = hit {
@@ -59,20 +55,16 @@ impl Raycaster {
                 ) as usize;
                 let bottom: usize = max((graphics::HEIGHT as i32 / 2) - (height / 2), 0) as usize;
 
-                // let adjacent_x = (hit.idx_x as i32 - last_hit.idx_x as i32).abs() <= 1;
-                // let adjacent_y = (hit.idx_y as i32 - last_hit.idx_y as i32).abs() <= 1;
-                let adjacent_x = hit.idx_x.abs_diff(last_hit.idx_x) <= 1;
-                let adjacent_y = hit.idx_y.abs_diff(last_hit.idx_y) <= 1;
-
-                if (!adjacent_x
-                    || !adjacent_y
-                    || hit.normal_along_x != last_hit.normal_along_x
-                    || !last_on_wall)
-                    && x_pixel > 0
-                {
+                let x_diff = hit.idx_x.abs_diff(last_hit.idx_x);
+                let y_diff = hit.idx_y.abs_diff(last_hit.idx_y);
+                let diagonal = x_diff == 1 && y_diff == 1; 
+                let far_away = x_diff >= 2 || y_diff >= 2; 
+                let new_normal = hit.normal_along_x != last_hit.normal_along_x; 
+                
+                if (diagonal || far_away || new_normal || !last_on_wall) && x_pixel > 0 {
                     // hit a wall corner, draw a vertical line
                     for y_pixel in 0..graphics::HEIGHT {
-                        pixels[y_pixel][x_pixel] = y_pixel >= bottom && y_pixel <= max(top, last_top);
+                        pixels[y_pixel][x_pixel] = y_pixel >= min(bottom, last_bottom) && y_pixel <= max(top, last_top);
                     }
                 } else {
                     // hit a wall, draw top and bottom only
@@ -106,11 +98,6 @@ impl Raycaster {
         }
     }
 
-    fn screen_coord_to_angle_rad(&self, screen_coord: I5F11) -> I5F11 {
-        // ooh magic
-        cordic::atan((2 * screen_coord - I5F11::const_from_int(1)) * self.tan_half_fov.to_num::<I5F11>())
-    }
-
     // DDA algorithm (https://www.youtube.com/watch?v=NbSee-XM7WA&ab_channel=javidx9)
     fn cast_ray(&self, start_x: I5F11, start_y: I5F11, ray_angle_rad: I5F11) -> Option<RayHit> {
         let (dir_y, dir_x) = cordic::sin_cos(ray_angle_rad);
@@ -122,9 +109,11 @@ impl Raycaster {
             Some(v) => v,
             None => I5F11::MAX
         }; // Length of step if moving 1 unit in y
+        let mut last_hit_x_normal = false; // Normal of last wall hit
 
         // Length of ray if next step is 1 unit in x (account for off-grid start)
         let mut ray_length_x = if dir_x >= 0.0 {
+            last_hit_x_normal = true;
             start_x.ceil() - start_x
         } else {
             start_x - start_x.floor()
@@ -147,18 +136,11 @@ impl Raycaster {
             if self.valid_map_idx(idx_x, idx_y) {
                 if self.map[idx_y as usize][idx_x as usize] {
                     // ray has collided with a wall!
-                    let ray_hit_x = ray_length * dir_x;
-                    let ray_hit_y = ray_length * dir_y;
-
-                    let x_diff = (ray_hit_x - ray_hit_x.round()).abs();
-                    let y_diff = (ray_hit_y - ray_hit_y.round()).abs();
-                    let normal_along_x = x_diff < y_diff;
-
                     return Some(RayHit {
                         length: ray_length,
                         idx_x: idx_x as usize,
                         idx_y: idx_y as usize,
-                        normal_along_x,
+                        normal_along_x: last_hit_x_normal,
                     });
                 }
             } else {
@@ -171,10 +153,12 @@ impl Raycaster {
                 idx_x += step_x;
                 ray_length = ray_length_x;
                 ray_length_x += ray_unit_step_size_x;
+                last_hit_x_normal = true;
             } else {
                 idx_y += step_y;
                 ray_length = ray_length_y;
                 ray_length_y += ray_unit_step_size_y;
+                last_hit_x_normal = false;
             }
         }
     }
