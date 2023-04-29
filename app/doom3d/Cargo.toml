@@ -9,6 +9,9 @@ fixed = "1.23.1"
 libm = "0.2.6"
 tdriver = { path = "../tdriver" }
 
+[build_dependencies]
+tdriver = { path = "../tdriver" }
+
 # Don't ever use this for riscv builds or they will be massive
 [profile.dev]
 
