@@ -151,7 +151,10 @@ pub fn init() -> Screen {
     let mut screen = Screen { 
         terminal,
         state: [[false; WIDTH]; HEIGHT],
-        tick_rate: Duration::from_millis(100),
+        tick_rate: Duration::from_millis(
+            std::option_env!("EMU_TICK_RATE").unwrap_or("100").parse().unwrap()
+            // std::env!("EMU_TICK_RATE").parse().unwrap()
+            ),
         last_tick: Instant::now()
     };
 
