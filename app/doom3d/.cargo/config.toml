@@ -4,6 +4,9 @@ rustflags = ["-C", "link-arg=-Tlink.x", "-C", "llvm-args=-ffast-math"]
 [build]
 target = ["riscv32i-unknown-none-elf", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
 
+[env]
+EMU_TICK_RATE = "100"
+
 [alias]
 rbuild = "build --release --target riscv32i-unknown-none-elf"
 xbuild = "build --target x86_64-unknown-linux-gnu"
