@@ -58,7 +58,7 @@ Registers:
 0x1E1FC (write only):
 0: Write screen
 
-0x1E200 (read only):
+0x1E1F8 (read only):
 0: Down
 1: Left
 2: Right
