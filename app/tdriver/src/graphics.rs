@@ -30,6 +30,13 @@ pub const HEIGHT: usize = 48;
 /// Width in number of 32 bit words that can fit horizontally
 pub const WORDS: usize = WIDTH / 32;
 
+pub mod input_flags {
+    pub const DOWN: u32 = 0b1;
+    pub const LEFT: u32 = 0b10;
+    pub const RIGHT: u32 = 0b100;
+    pub const UP: u32 = 0b1000;
+}
+
 /******************************************************************************
  * Types
  ******************************************************************************/
@@ -42,6 +49,8 @@ pub struct Screen {
     base_addr: *mut u32,
     #[cfg(target_arch = "riscv32")]
     update_addr: *mut u32,
+    #[cfg(target_arch = "riscv32")]
+    input_addr: *mut u32,
 
     #[cfg(not(target_arch = "riscv32"))]
     terminal: Terminal<tui::backend::CrosstermBackend<std::io::Stdout>>,
@@ -51,6 +60,8 @@ pub struct Screen {
     tick_rate: Duration,
     #[cfg(not(target_arch = "riscv32"))]
     last_tick: Instant,
+    #[cfg(not(target_arch = "riscv32"))]
+    input: u32,
 }
 
 
@@ -75,6 +86,10 @@ fn write_screen(screen: &mut Screen) {
                         screen.terminal.show_cursor().unwrap();
                         process::exit(0)
                     }, 
+                    KeyCode::Char('w') => screen.input |= input_flags::UP,
+                    KeyCode::Char('d') => screen.input |= input_flags::RIGHT,
+                    KeyCode::Char('a') => screen.input |= input_flags::LEFT,
+                    KeyCode::Char('s') => screen.input |= input_flags::DOWN,
                     _ => {}
                 }
             }
@@ -138,6 +153,7 @@ pub fn init() -> Screen {
     Screen {
         base_addr: 0x1E000 as *mut u32,
         update_addr: 0x1E1FC as *mut u32,
+        input_addr: 0x1E1F8 as *mut u32,
     }
 }
 
@@ -155,7 +171,8 @@ pub fn init() -> Screen {
             std::option_env!("EMU_TICK_RATE").unwrap_or("100").parse().unwrap()
             // std::env!("EMU_TICK_RATE").parse().unwrap()
             ),
-        last_tick: Instant::now()
+        last_tick: Instant::now(),
+        input: 0,
     };
 
     write_screen(&mut screen);
@@ -239,6 +256,23 @@ pub fn update(screen: &mut Screen) {
 
 #[cfg(not(target_arch = "riscv32"))] {
     write_screen(screen);
+}}
+
+/**
+ * Reads input from controller since last call to this
+ */
+pub fn input(screen: &mut Screen) -> u32 {
+    
+#[cfg(target_arch = "riscv32")] {
+    unsafe {
+        return screen.input_addr.read_volatile()
+    }
+}
+
+#[cfg(not(target_arch = "riscv32"))] {
+    let input: u32 = screen.input;
+    screen.input = 0;
+    input
 }}
 
 /******************************************************************************
