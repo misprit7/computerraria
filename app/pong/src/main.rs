@@ -34,10 +34,13 @@ fn main() -> ! {
     graphics::update(&mut screen);
 
     loop {
-
         // Move left platform
-        let defense_left = ball_vel.0 < 0;
-        if (defense_left && ball_pos.1 > p_left) || (!defense_left && p_left < HEIGHT / 2) {
+        let input = graphics::input(&mut screen);
+        let up = input & graphics::input_flags::UP != 0;
+        let down = input & graphics::input_flags::DOWN != 0;
+
+        if up && down {}
+        else if down {
             if p_left + p_size < HEIGHT - 1 {
                 graphics::write_line(&mut screen, 0, p_left-p_size, 0);
                 pixels[p_left-p_size] &= !1;
@@ -45,7 +48,7 @@ fn main() -> ! {
                 pixels[p_left+p_size] |= 1;
                 p_left += 1;
             }
-        } else {
+        } else if up {
             if p_left - p_size > 0 {
                 graphics::write_line(&mut screen, 1, p_left-p_size, 0);
                 pixels[p_left-p_size] |= 1;
