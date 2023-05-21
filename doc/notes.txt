@@ -55,8 +55,14 @@ Misc:
 8-3: Store tmp
 
 Registers:
-Read only (0x1E1FC):
+0x1E1FC (write only):
 0: Write screen
+
+0x1E200 (read only):
+0: Down
+1: Left
+2: Right
+3: Up
 
 Notes on registers: 
 - Use 32 bit binary tree multiplexer
