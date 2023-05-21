@@ -30,11 +30,12 @@ pub const HEIGHT: usize = 48;
 /// Width in number of 32 bit words that can fit horizontally
 pub const WORDS: usize = WIDTH / 32;
 
+/// Bitflag definitions for controller inputs
 pub mod input_flags {
-    pub const DOWN: u32 = 0b1;
-    pub const LEFT: u32 = 0b10;
-    pub const RIGHT: u32 = 0b100;
-    pub const UP: u32 = 0b1000;
+    pub const DOWN: u32 =   0b0001;
+    pub const LEFT: u32 =   0b0010;
+    pub const RIGHT: u32 =  0b0100;
+    pub const UP: u32 =     0b1000;
 }
 
 /******************************************************************************
@@ -260,6 +261,9 @@ pub fn update(screen: &mut Screen) {
 
 /**
  * Reads input from controller since last call to this
+ *
+ * Returns a bitmask of the buttons pressed, see input_flags for bit position
+ * definitions
  */
 pub fn input(screen: &mut Screen) -> u32 {
     
