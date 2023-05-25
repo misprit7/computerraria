@@ -8,23 +8,19 @@ entry!(main);
 
 fn update_board(board: &[u64; graphics::HEIGHT]) -> [u64; graphics::HEIGHT] {
     let mut board_next: [u64; graphics::HEIGHT] = [0; graphics::HEIGHT];
-    for r in 0..10 {
+    for r in 1..10 {
         // let c = 1;
-        for c in 0..10 {
+        for c in 1..10 {
             let cur_state = (board[r] >> c) & 0b1;
-            let start_i = if r > 0 {r-1} else {r};
-            let end_i = if r + 1 < board.len() {r+1} else {r};
 
-            let start_j = if c > 0 {c-1} else {c};
-            let end_j = if c + 1 < 64 {c+1} else {c};
-
-            let mut neighbors_alive = 0;
-            for i in start_i..=end_i {
-                for j in start_j..=end_j {
-                    if i == r && j == c { continue }
-                    neighbors_alive += (board[i] >> j) & 0b1;
-                }
-            }
+            let neighbors_alive =   ((board[r-1] >> (c-1)) & 1) +
+                ((board[r-1] >> c) & 1) +
+                ((board[r-1] >> (c+1)) & 1) +
+                ((board[r] >> (c-1)) & 1) +
+                ((board[r] >> (c+1)) & 1) +
+                ((board[r+1] >> (c-1)) & 1) +
+                ((board[r+1] >> c) & 1) +
+                ((board[r+1] >> (c+1)) & 1);
             if cur_state == 1 {
                 if neighbors_alive < 2 || neighbors_alive > 3 {
                     board_next[r] &= !(0b1 << c);
