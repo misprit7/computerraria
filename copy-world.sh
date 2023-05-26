@@ -9,7 +9,7 @@ case $1 in
         cp $(dirname "$0")/computer.wld ~/.local/share/Terraria/tModLoader/Worlds/computer.wld
         ;;
     -f|--from)
-        cp ~/.local/share/Terraria/tModLoader/Worlds/computer.wld .
+        cp ~/.local/share/Terraria/tModLoader/Worlds/computer.wld $(dirname "$0")
         ;;
     *)
         "Supply either --to or --from to copy either from or to the Terraria world files" 
