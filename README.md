@@ -44,6 +44,73 @@ As an example of what it can do, here is Pong, running purely on the in-game cpu
 
 https://user-images.githubusercontent.com/33139843/229342342-de4708e1-7467-4f99-834b-3d0fb28d0858.mp4
 
+# Setup
+
+Note that currently only Linux is fully supported, and only parts of this have been tested on Windows. However I've left some steps for anyone who wants to try getting Windows working, in theory using wsl it should be fairly straightforward and things should be identical.
+
+## Prerequisites
+
+For a comprehensive list of everything that is needed to run all aspects of this project, see the [Dockerfile](docker/Dockerfile). However, to develop and run applications for the computer all you really need is a working Cargo/rustc installation, install it [here](https://www.rust-lang.org/tools/install) or through your package manager.
+
+## Setup Process
+
+Navigate to where you want to keep this project and clone it. Copy computer.wld to your tModLoader world path. Depending on your platform, this is:
+```
+Windows: Documents\My Games\Terraria\ModLoader\Worlds
+Linux: ~/.local/share/Terraria/tModLoader/Worlds
+```
+On Linux you can automate copying back and forth like this with the `copy-world.sh` script with either the `--to` (copy to world folder) or `--from` (copy from world folder) flags.
+
+Next, navigate to the mod sources folder and clone [WireHead](https://github.com/misprit7/WireHead):
+```
+#Windows
+cd "%userprofile%\Documents\My Games\Terraria\ModLoader\ModSources" && git clone https://github.com/misprit7/WireHead.git
+
+#Linux
+cd "~/.local/share/Terraria/tModLoader/ModSources" && git clone https://github.com/misprit7/WireHead.git
+```
+
+Prepare the binary you wish to run. For example for pong compile the rust app and copy the binary to a more convenient path:
+
+```
+cd <path to computerraria>/app/pong
+cargo rb
+./copy-bin.sh /tmp/pong.txt
+```
+
+Start [tModLoader](https://store.steampowered.com/app/1281930/tModLoader/), and from the main menu go to Workshop->Develop and click on the Build button next to WireHead. For convenience I'd also recommend installing Cheat Sheet and HERO's Mod from the Download Mods section of the workshop if you haven't already. Then open the new world you copied earlier in game. In game type:
+```
+/bin write /tmp/pong.txt
+```
+
+Currently the NPCs that run the CPU clock are too far away to spawn immediately, this is a bug and should be fixed soon. As a workaround, go through the blue teleporter shown below, fly upwards a bit, come back down and go back through the same teleporter.
+
+![Control Panel](doc/img/control-panel.png)
+
+After this workaround is done, press the first two of the three levers on the far right to start the program. Go through the orange teleporter to arrive at the screen area. Pong should be running and is controllable by the controller beneath the screen (use HERO's Mod's camera lock to see the screen and controls at the same time).
+
+![Pong](doc/img/pong-still.png)
+
+## Docker
+
+For advanced CI/headless usage you can use the docker image:
+
+[Docker Image](https://hub.docker.com/r/misprit7/computerraria)
+
+If you already have docker installed this can be pulled with
+
+```bash
+docker pull misprit7/computerraria
+```
+
+You can then start the container with
+
+```bash
+docker run -it misprit7/computerraria
+```
+
+This image already has all tooling installed so you should be able to build everything. 
+
 # File Structure
 
 The major relevant parts of the project are as follows:
@@ -94,25 +161,4 @@ All automated tests written for the CPU. These are mostly handled through [risco
 
 Interfaces programmatically with running Terraria instance. This consists of both a python module as well as a command line wrapper to upload binaries, start execution and manipulate other fine grain controls without needing a GUI. 
 
-# Setup
-
-## Docker
-
-The easiest way to get setup is with the docker image available here: 
-
-[Docker Image](https://hub.docker.com/r/misprit7/computerraria)
-
-If you already have docker installed this can be pulled with
-
-```bash
-docker pull misprit7/computerraria
-```
-
-You can then start the container with
-
-```bash
-docker run -it misprit7/computerraria
-```
-
-This image already has all tooling installed so you should be able to build everything. 
 
