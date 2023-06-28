@@ -6,6 +6,10 @@
 <h2 align="center">
   A fully compliant RISC-V computer inside Terraria
 </h2>
+<h2 align="center">
+  Video explanation: https://youtu.be/zXPiqk0-zDY
+</h2>
+
 <div align="center">
   <a href=https://github.com/misprit7/computerraria/actions/workflows/in-game-tests.yml>
     <img src=https://github.com/misprit7/computerraria/actions/workflows/in-game-tests.yml/badge.svg/>
