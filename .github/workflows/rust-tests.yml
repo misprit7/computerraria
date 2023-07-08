@@ -25,6 +25,7 @@ jobs:
           if [ -d "$i" ]; then
             echo "Building $i" &&
             cargo build --verbose --manifest-path="$i/Cargo.toml"
+            cargo rbuild --verbose --manifest-path="$i/Cargo.toml"
           fi
         done
 
