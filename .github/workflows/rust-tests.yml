@@ -25,7 +25,7 @@ jobs:
         rustup target add riscv32i-unknown-none-elf
         for i in app/* ; do
           if [ -d "$i" ]; then
-            echo "::startgroup::$i"
+            echo "::group::$i"
             cargo build --verbose --manifest-path="$i/Cargo.toml"
             cargo build --target=riscv32i-unknown-none-elf --verbose --manifest-path="$i/Cargo.toml"
             echo "::endgroup"
