@@ -9,7 +9,7 @@ use tdriver::entry;
 use tdriver::graphics;
 use tdriver::graphics::Screen;
 
-use fixed::types::{I5F11, I9F7};
+use fixed::types::{I5F11};
 
 entry!(main);
 

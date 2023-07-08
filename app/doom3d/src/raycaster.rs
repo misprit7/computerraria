@@ -1,7 +1,7 @@
 use core::cmp::{max, min};
 use tdriver::graphics;
 use crate::maps::{MAP_WIDTH, MAP_HEIGHT};
-use fixed::types::{I9F7, I5F11, I16F0, I16F16};
+use fixed::types::{I9F7, I5F11};
 use cordic;
 
 use fixed::prelude::*;
