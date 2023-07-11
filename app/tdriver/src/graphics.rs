@@ -199,7 +199,7 @@ pub fn write_raw(screen: &mut Screen, pixels: &[[u32; WORDS]; HEIGHT]) {
 #[cfg(not(target_arch = "riscv32"))] {
     for h in 0..screen.state.len() {
         for w in 0..screen.state[0].len() {
-            screen.state[h][w] = (pixels[w/32][h] >> (w%32)) & 0b1 == 1
+            screen.state[h][w] = (pixels[h][w/32] >> (w%32)) & 0b1 == 1
         }
     }
 }}
