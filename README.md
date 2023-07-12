@@ -147,7 +147,7 @@ Template for new rust projects that implements minimal tdriver
 
 `computer.wld`
 
-The actual world file. This is technically a binary file, but given the context of the project it acts much more like source code given that it is edited manually and compresses extremely well. This generally isn't edited in place, it's copied back and forth to the user installation with [copy-world.sh](copy_world.sh). 
+The actual world file. This is technically a binary file, but given the context of the project it acts much more like source code given that it is edited manually and compresses extremely well. This generally isn't edited in place, it's copied back and forth to the user installation with [copy-world.sh](copy-world.sh). 
 
 `doc/`
 
