@@ -17,7 +17,7 @@ import tqdm
 video_path = './assets/bad-apple.mp4'
 code_gen_path = './src/video.rs'
 width, height = (64, 48)
-num_frames = 150
+num_frames = 160
 
 def write_frame(frame_information: Tuple[int, cv2.VideoCapture]):
     order, frame = frame_information
@@ -44,10 +44,17 @@ def write_frame(frame_information: Tuple[int, cv2.VideoCapture]):
 def generate_frames(video: cv2.VideoCapture):
     success = True
     order = 0
+    i = 0
     
     while success and order < num_frames:
+        i += 1
         success, frame = video.read()
+
+        if i % 2 == 0:
+            continue
+
         _, bw_frame = cv2.threshold(frame, 128, 255, cv2.THRESH_BINARY)
+
 
         if bw_frame is None:
             break
