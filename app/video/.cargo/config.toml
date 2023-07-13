@@ -2,7 +2,7 @@
 rustflags = ["-C", "link-arg=-Tlink.x"]
 
 [env]
-EMU_TICK_RATE = "17"
+EMU_TICK_RATE = "68"
 
 [alias]
 rbuild = "build --release --target riscv32i-unknown-none-elf"
