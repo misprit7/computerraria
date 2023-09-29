@@ -77,12 +77,16 @@ class TServer:
         port=7777,
         inplace=False,
         verbose=False,
+        terracc=False,
+        lazy=False,
     ):
         self.path = TMODLOADER_DIR + 'LaunchUtils/ScriptCaller.sh' if path is None else path
         self.world = COMPUTERRARIA_DIR + 'computer.wld' if world is None else world
         self.port = port
         self.inplace = inplace
         self.verbose = verbose
+        self.terracc = terracc
+        self.lazy = lazy
 
 
         # World specific config
@@ -134,6 +138,7 @@ class TServer:
             self.process.logfile = sys.stdout.buffer
 
         self.process.expect('Server started')
+        print('Server started')
         time.sleep(0.2)
         self.process.sendline('init')
         time.sleep(0.2)
@@ -141,7 +146,10 @@ class TServer:
         time.sleep(0.2)
         self.clock_start(self.triggers['clk'], -1)
         time.sleep(0.2)
-
+        if self.terracc:
+            self.compile()
+            time.sleep(0.2)
+            print('terracc compiled')
 
     def stop(self):
         """Stops the server and cleans up"""
@@ -163,6 +171,10 @@ class TServer:
         """Sets config of the world for mass reads/writes"""
         assert(self.running())
         self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
+
+    def compile(self):
+        self.process.sendline('accel compile lazy' if self.lazy else 'accel compile')
+        self.process.expect('terracc enabled', timeout=90)
 
     def write_bin(self, file: str):
         """Writes given file to the world, if given an elf it will convert to bin in place"""
