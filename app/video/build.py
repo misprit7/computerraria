@@ -28,14 +28,14 @@ width, height = (64, 48)
 # start_frame = 326*2
 # end_frame = 326*3
 # Set 4
-# start_frame = 326*3
-# end_frame = 326*4
+start_frame = 326*3
+end_frame = 326*4
 # Set 5
 # start_frame = 326*4
 # end_frame = 326*5
 # Set 5
-start_frame = 326*5
-end_frame = 326*6
+# start_frame = 326*5
+# end_frame = 326*6
 
 
 def write_frame(frame_information: Tuple[int, cv2.VideoCapture]):
