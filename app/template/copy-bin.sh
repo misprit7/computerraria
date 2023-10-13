@@ -4,7 +4,7 @@
 # Example: ./copy_bin.sh /tmp/in.txt
 
 # Rebuild project
-cargo build --release
+cargo rbuild --release
 
 # Convert from elf to bin
 # Fancy glob matching! https://zsh.sourceforge.io/Doc/Release/Expansion.html#Glob-Qualifiers
