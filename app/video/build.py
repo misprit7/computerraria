@@ -17,7 +17,26 @@ import tqdm
 video_path = './assets/bad-apple.mp4'
 code_gen_path = './src/video.rs'
 width, height = (64, 48)
-num_frames = 160
+
+# Set 1
+# start_frame = 0
+# end_frame = 326
+# Set 2
+# start_frame = 326
+# end_frame = 326*2
+# Set 3
+# start_frame = 326*2
+# end_frame = 326*3
+# Set 4
+start_frame = 326*3
+end_frame = 326*4
+# Set 5
+# start_frame = 326*4
+# end_frame = 326*5
+# Set 5
+# start_frame = 326*5
+# end_frame = 326*6
+
 
 def write_frame(frame_information: Tuple[int, cv2.VideoCapture]):
     order, frame = frame_information
@@ -32,7 +51,7 @@ def write_frame(frame_information: Tuple[int, cv2.VideoCapture]):
             # Assume width is always divisible by 32
             frame_str += '0b'
             for b in range(32):
-                frame_str += '1' if frame[j, 31*i-b].all() == 0 else '0'
+                frame_str += '0' if frame[j, 31*i-b].all() == 0 else '1'
             frame_str += ', '
 
         frame_str += '],\n'
@@ -46,9 +65,11 @@ def generate_frames(video: cv2.VideoCapture):
     order = 0
     i = 0
     
-    while success and order < num_frames:
+    while success and i < end_frame:
         i += 1
         success, frame = video.read()
+        if i < start_frame:
+            continue
 
         if i % 2 == 0:
             continue
@@ -72,7 +93,7 @@ if __name__ == '__main__':
     frame_cnt = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     
     with ThreadPool(processes=cpu_count()) as pool:
-        frames = list(tqdm.tqdm(pool.imap(write_frame, generate_frames(video)), total=min(frame_cnt, num_frames)))
+        frames = list(tqdm.tqdm(pool.imap(write_frame, generate_frames(video)), total=min(frame_cnt, (end_frame-start_frame)/2)))
         pool.close()
         pool.join()
         
