@@ -22,4 +22,4 @@ You can then load it into Computerraria with the following command, written in t
 Once you start the clock the screen should update to be on in the outer horizontal border.
 
 ## Development
-The entrance point of the program is `main` in [`src/main.rs`](src/main.rs), make changes there.
+The entrance point of the program is `main` in [`src/main.rs`](src/main.rs), make changes there. You can change the tick rate of the emulator in the `[env]` section of [`.cargo/config.toml`](.cargo/config.toml).
