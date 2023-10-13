@@ -115,7 +115,6 @@ fn main() -> ! {
             rot = rand%4;
             a = shape[rot];
             tile_pos = MIDDLE;
-            n = find_bottom(&new_pos);
             r = TOP-find_top(&a)+1;
 
             for i in 0..4{
