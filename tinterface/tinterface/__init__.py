@@ -2,6 +2,7 @@ from pathlib import Path
 import os, shutil, time, sys
 from typing import Tuple
 import pexpect
+from datetime import datetime
 
 # CI image is under root user
 TMODLOADER_DIR = str(Path('/root/.local/share/Steam/steamapps/common/tModLoader/')) + '/'
@@ -183,6 +184,7 @@ class TServer:
         assert(ext == '.bin' or ext == '.elf' or ext == '.txt')
         binfile = f + '.bin'
         txtfile = f + '.txt'
+
         if ext == '.elf':
             objcopy = ''
             if shutil.which('rust-objcopy'):
@@ -199,6 +201,7 @@ class TServer:
                 # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
                 # Need to trim since WireHead doesn't like a trailing space
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8')[:-1])
+
         # Sync here to avoid accidentally writing without syncing first
         self.sync()
         # WireHead has weird case sensitive glitch that I don't feel like fixing
@@ -214,6 +217,7 @@ class TServer:
         if not force:
             # Unless forced make sure you don't overwrite a non txt file
             assert(ext == '.txt')
+
         # Sync here to avoid accidentally reading without syncing first
         self.sync()
         # WireHead has weird case sensitive glitch that I don't feel like fixing
@@ -354,7 +358,7 @@ class TServer:
                                  self.triggers['dummy-tl'][1] + y * self.dummies_gap[1]))
                     n_cur -= 1
 
-    def run(self, prog_file: str, out_file: str, clock_cycles=50000):
+    def run(self, prog_file: str, out_file: str, clock_cycles=50000, timeout_s=300):
         """
         Runs prog_file and returns output to out_file
 
@@ -364,40 +368,30 @@ class TServer:
         self.reset_state()
         self.write_bin(prog_file)
 
+        if self.terracc:
+            # print('Started compiling')
+            self.compile()
+            # print('Finished compiling')
+
         first_cc = self.clock_count()
 
         # Number of dummies active
         n_cur = 120
         self.set_freq(n_cur * FPS)
 
-        # Delay between dynamic adjustment of clock speed
-        # Doesn't matter too much as long as triggers aren't super frequent
-        delay = 3
-        
-        # Clock cycle tracker
-        cc = self.clock_count()
-        last_cc = cc
-        while cc - first_cc < clock_cycles:
-            # Do actual computation
-            time.sleep(delay)
-            last_cc = cc
-            cc = self.clock_count()
+        if self.terracc:
+            self.sync()
 
-            # Calculate whether we're lagging or not
-            expected_count = FPS * delay * n_cur
-            ratio = (cc - last_cc) / expected_count
-            # ~0.9 fps is a reasonable amount of lag
-            if ratio < 0.90:
-                n_next = int(n_cur * ratio / 0.9)
-                n_cur = max(1, n_next)
-            else:
-                n_cur = min(self.num_dummies[0] * self.num_dummies[1], n_cur + 5)
+        t_start = time.time()
+        while self.clock_count() - first_cc < clock_cycles:
+            time.sleep(1)
+            if self.clock_count() == first_cc:
+                print('Clock not progressing! Cancelling run')
+                break
+            if time.time() - t_start > timeout_s:
+                print('Timed out! Cancelling run')
+                break
 
-            # Adjust frequency
-            print(f'Adjusting frequency to f={n_cur * FPS} Hz (Expected: {expected_count}, cc: {cc}, last_cc: {last_cc}, ratio: {ratio})')
-            self.set_freq(n_cur * FPS)
-
-            cc = self.clock_count()
 
         self.set_freq(0)
 
