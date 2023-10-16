@@ -4,6 +4,9 @@
 *.wld.bak
 *.wld.bak2
 
+# Me being dumb
+--to
+
 # Docker secrets
 docker/.env
 
