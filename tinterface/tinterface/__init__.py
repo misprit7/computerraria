@@ -101,7 +101,7 @@ class TServer:
             'dummy40-2': (3177, 49),
             'dummy40-3': (3129, 49),
             'dummy-tl': (3089, 53), # Individual dummies, top left
-            'clk': (3201, 158), # manual clock
+            'clk': (3194, 153), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
             'zmem': (3250, 374), # zero memory select
