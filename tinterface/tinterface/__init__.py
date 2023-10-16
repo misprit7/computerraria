@@ -2,6 +2,8 @@ from pathlib import Path
 import os, shutil, time, sys
 from typing import Tuple
 import pexpect
+from datetime import datetime
+from tqdm import tqdm
 
 # CI image is under root user
 TMODLOADER_DIR = str(Path('/root/.local/share/Steam/steamapps/common/tModLoader/')) + '/'
@@ -77,12 +79,16 @@ class TServer:
         port=7777,
         inplace=False,
         verbose=False,
+        terracc=False,
+        lazy=False,
     ):
         self.path = TMODLOADER_DIR + 'LaunchUtils/ScriptCaller.sh' if path is None else path
         self.world = COMPUTERRARIA_DIR + 'computer.wld' if world is None else world
         self.port = port
         self.inplace = inplace
         self.verbose = verbose
+        self.terracc = terracc
+        self.lazy = lazy
 
 
         # World specific config
@@ -95,7 +101,7 @@ class TServer:
             'dummy40-2': (3177, 49),
             'dummy40-3': (3129, 49),
             'dummy-tl': (3089, 53), # Individual dummies, top left
-            'clk': (3201, 158), # manual clock
+            'clk': (3194, 153), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
             'zmem': (3250, 374), # zero memory select
@@ -132,8 +138,11 @@ class TServer:
 
         if self.verbose:
             self.process.logfile = sys.stdout.buffer
+        else:
+            self.process.logfile = open(TMP_DIR + 'tinterface.log', 'wb')
 
         self.process.expect('Server started')
+        print('Server started')
         time.sleep(0.2)
         self.process.sendline('init')
         time.sleep(0.2)
@@ -141,7 +150,9 @@ class TServer:
         time.sleep(0.2)
         self.clock_start(self.triggers['clk'], -1)
         time.sleep(0.2)
-
+        if self.terracc:
+            self.compile(lazy=self.lazy)
+            print('terracc compiled')
 
     def stop(self):
         """Stops the server and cleans up"""
@@ -164,6 +175,10 @@ class TServer:
         assert(self.running())
         self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
 
+    def compile(self, lazy=False):
+        self.process.sendline('accel compile lazy' if lazy else 'accel compile')
+        self.process.expect('terracc enabled', timeout=120)
+
     def write_bin(self, file: str):
         """Writes given file to the world, if given an elf it will convert to bin in place"""
         assert(self.running())
@@ -171,6 +186,7 @@ class TServer:
         assert(ext == '.bin' or ext == '.elf' or ext == '.txt')
         binfile = f + '.bin'
         txtfile = f + '.txt'
+
         if ext == '.elf':
             objcopy = ''
             if shutil.which('rust-objcopy'):
@@ -187,6 +203,7 @@ class TServer:
                 # hexdump -ve '1/1 "%.2x "' | head -c -1 > 
                 # Need to trim since WireHead doesn't like a trailing space
                 f.write(pexpect.run(f'hexdump -ve \'1/1 "%.2x "\' {binfile}').decode('utf-8')[:-1])
+
         # Sync here to avoid accidentally writing without syncing first
         self.sync()
         # WireHead has weird case sensitive glitch that I don't feel like fixing
@@ -202,6 +219,7 @@ class TServer:
         if not force:
             # Unless forced make sure you don't overwrite a non txt file
             assert(ext == '.txt')
+
         # Sync here to avoid accidentally reading without syncing first
         self.sync()
         # WireHead has weird case sensitive glitch that I don't feel like fixing
@@ -293,10 +311,12 @@ class TServer:
         """Resets all state of the computer to a blank slate except ram"""
         assert(self.running())
 
+        self.sync()
         tries = 0
         # Prevent trying to reset state while in the middle of execution
         while not self.read(self.tiles['inexec']):
             self.trigger(self.triggers['clk'])
+            self.sync()
             tries += 1
             # Most clock cycles of an instructions is 3
             if tries >= 3: 
@@ -310,6 +330,7 @@ class TServer:
         self.trigger(self.triggers['zdb'])
         self.trigger(self.triggers['zmem'])
         self.trigger(self.triggers['lpc'])
+        self.sync()
 
     def write_zeros(self):
         """Writes all zeros to memory"""
@@ -342,15 +363,20 @@ class TServer:
                                  self.triggers['dummy-tl'][1] + y * self.dummies_gap[1]))
                     n_cur -= 1
 
-    def run(self, prog_file: str, out_file: str, clock_cycles=50000):
+    def run(self, prog_file: str, out_file: str, clock_cycles=50000, timeout_s=300):
         """
         Runs prog_file and returns output to out_file
-
-        This method attempts to be clever about the frequency given to the cpu to minimize lag
+        Assumes world is in ready state
         """
         assert(self.running())
-        self.reset_state()
         self.write_bin(prog_file)
+
+        time.sleep(0.5)
+
+        if self.terracc:
+            print('Started compiling')
+            self.compile(lazy=False)
+            print('Finished compiling')
 
         first_cc = self.clock_count()
 
@@ -358,41 +384,31 @@ class TServer:
         n_cur = 120
         self.set_freq(n_cur * FPS)
 
-        # Delay between dynamic adjustment of clock speed
-        # Doesn't matter too much as long as triggers aren't super frequent
-        delay = 3
-        
-        # Clock cycle tracker
-        cc = self.clock_count()
-        last_cc = cc
-        while cc - first_cc < clock_cycles:
-            # Do actual computation
-            time.sleep(delay)
-            last_cc = cc
-            cc = self.clock_count()
+        self.sync()
 
-            # Calculate whether we're lagging or not
-            expected_count = FPS * delay * n_cur
-            ratio = (cc - last_cc) / expected_count
-            # ~0.9 fps is a reasonable amount of lag
-            if ratio < 0.90:
-                n_next = int(n_cur * ratio / 0.9)
-                n_cur = max(1, n_next)
-            else:
-                n_cur = min(self.num_dummies[0] * self.num_dummies[1], n_cur + 5)
+        t_start = time.time()
+        while self.clock_count() - first_cc < clock_cycles:
+            time.sleep(1)
+            if self.clock_count() == first_cc:
+                print('Clock not progressing! Cancelling run')
+                break
+            if time.time() - t_start > timeout_s:
+                print('Timed out! Cancelling run')
+                break
 
-            # Adjust frequency
-            print(f'Adjusting frequency to f={n_cur * FPS} Hz (Expected: {expected_count}, cc: {cc}, last_cc: {last_cc}, ratio: {ratio})')
-            self.set_freq(n_cur * FPS)
-
-            cc = self.clock_count()
+        print('Finished execution')
 
         self.set_freq(0)
 
-        self.sync()
         self.reset_state()
+        time.sleep(0.2)
         # read_bin handles syncing
         self.read_bin(out_file)
 
+    def stress_test(self):
+        print('Starting stress test')
+        for _ in tqdm(range(5000)):
+            self.trigger(self.triggers['clk'])
+        print('Finished stress test')
 
 
