@@ -3,6 +3,7 @@ import os, shutil, time, sys
 from typing import Tuple
 import pexpect
 from datetime import datetime
+from tqdm import tqdm
 
 # CI image is under root user
 TMODLOADER_DIR = str(Path('/root/.local/share/Steam/steamapps/common/tModLoader/')) + '/'
@@ -137,6 +138,8 @@ class TServer:
 
         if self.verbose:
             self.process.logfile = sys.stdout.buffer
+        else:
+            self.process.logfile = open(TMP_DIR + 'tinterface.log', 'wb')
 
         self.process.expect('Server started')
         print('Server started')
@@ -148,8 +151,7 @@ class TServer:
         self.clock_start(self.triggers['clk'], -1)
         time.sleep(0.2)
         if self.terracc:
-            self.compile()
-            time.sleep(0.2)
+            self.compile(lazy=self.lazy)
             print('terracc compiled')
 
     def stop(self):
@@ -173,9 +175,9 @@ class TServer:
         assert(self.running())
         self.process.sendline(f'bin config {self.config_x.to_str()} {self.config_y.to_str()}')
 
-    def compile(self):
-        self.process.sendline('accel compile lazy' if self.lazy else 'accel compile')
-        self.process.expect('terracc enabled', timeout=90)
+    def compile(self, lazy=False):
+        self.process.sendline('accel compile lazy' if lazy else 'accel compile')
+        self.process.expect('terracc enabled', timeout=120)
 
     def write_bin(self, file: str):
         """Writes given file to the world, if given an elf it will convert to bin in place"""
@@ -309,10 +311,12 @@ class TServer:
         """Resets all state of the computer to a blank slate except ram"""
         assert(self.running())
 
+        self.sync()
         tries = 0
         # Prevent trying to reset state while in the middle of execution
         while not self.read(self.tiles['inexec']):
             self.trigger(self.triggers['clk'])
+            self.sync()
             tries += 1
             # Most clock cycles of an instructions is 3
             if tries >= 3: 
@@ -326,6 +330,7 @@ class TServer:
         self.trigger(self.triggers['zdb'])
         self.trigger(self.triggers['zmem'])
         self.trigger(self.triggers['lpc'])
+        self.sync()
 
     def write_zeros(self):
         """Writes all zeros to memory"""
@@ -361,17 +366,17 @@ class TServer:
     def run(self, prog_file: str, out_file: str, clock_cycles=50000, timeout_s=300):
         """
         Runs prog_file and returns output to out_file
-
-        This method attempts to be clever about the frequency given to the cpu to minimize lag
+        Assumes world is in ready state
         """
         assert(self.running())
-        self.reset_state()
         self.write_bin(prog_file)
 
+        time.sleep(0.5)
+
         if self.terracc:
-            # print('Started compiling')
-            self.compile()
-            # print('Finished compiling')
+            print('Started compiling')
+            self.compile(lazy=False)
+            print('Finished compiling')
 
         first_cc = self.clock_count()
 
@@ -379,8 +384,7 @@ class TServer:
         n_cur = 120
         self.set_freq(n_cur * FPS)
 
-        if self.terracc:
-            self.sync()
+        self.sync()
 
         t_start = time.time()
         while self.clock_count() - first_cc < clock_cycles:
@@ -392,13 +396,19 @@ class TServer:
                 print('Timed out! Cancelling run')
                 break
 
+        print('Finished execution')
 
         self.set_freq(0)
 
-        self.sync()
         self.reset_state()
+        time.sleep(0.2)
         # read_bin handles syncing
         self.read_bin(out_file)
 
+    def stress_test(self):
+        print('Starting stress test')
+        for _ in tqdm(range(5000)):
+            self.trigger(self.triggers['clk'])
+        print('Finished stress test')
 
 

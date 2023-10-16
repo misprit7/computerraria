@@ -61,7 +61,7 @@ class computerraria(pluginTemplate):
   def runTests(self, testList):
 
     logger.info('Starting server')
-    tserver = tinterface.TServer(terracc=True)
+    tserver = tinterface.TServer(terracc=False)
     tserver.start()
     logger.info('Server loaded')
     for testname in testList:
