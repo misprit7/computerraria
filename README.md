@@ -66,24 +66,28 @@ Linux: ~/.local/share/Terraria/tModLoader/Worlds
 On Linux you can automate copying back and forth like this with the `copy-world.sh` script with either the `--to` (copy to world folder) or `--from` (copy from world folder) flags.
 
 Next, navigate to the mod sources folder and clone [WireHead](https://github.com/misprit7/WireHead):
-```
-#Windows
-cd "%userprofile%\Documents\My Games\Terraria\ModLoader\ModSources" && git clone https://github.com/misprit7/WireHead.git
 
-#Linux
+Windows
+```bash
+cd "%userprofile%\Documents\My Games\Terraria\ModLoader\ModSources"
+git clone https://github.com/misprit7/WireHead.git
+```
+
+Linux
+```bash
 cd "~/.local/share/Terraria/tModLoader/ModSources" && git clone https://github.com/misprit7/WireHead.git
 ```
 
 Prepare the binary you wish to run. For example for pong compile the rust app and copy the binary to a more convenient path:
 
-```
+```bash
 cd <path to computerraria>/app/pong
 cargo rb
 ./copy-bin.sh /tmp/pong.txt
 ```
 
 Start [tModLoader](https://store.steampowered.com/app/1281930/tModLoader/), and from the main menu go to Workshop->Develop and click on the Build button next to WireHead. For convenience I'd also recommend installing Cheat Sheet and HERO's Mod from the Download Mods section of the workshop if you haven't already. Then open the new world you copied earlier in game. In game type:
-```
+```bash
 /bin write /tmp/pong.txt
 ```
 
