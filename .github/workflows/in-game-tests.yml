@@ -30,7 +30,7 @@ jobs:
         submodules: recursive
 
     - name: Install tinterface
-      run: pip3 install -e ./tinterface
+      run: pip3 install --break-system-packages -e ./tinterface
 
     - name: Run riscof tests
       run: ./run-tests.sh
