@@ -14,7 +14,7 @@
 ################################################################################
 # Probably should have used this in hindsight:
 # https://github.com/tModLoader/tModLoader/tree/1.4/patches/tModLoader/Terraria/release_extras/DedicatedServerUtils
-FROM steamcmd/steamcmd:latest
+FROM steamcmd/steamcmd@sha256:0d3d8716fb0ac76f02bd9d850334b892d1caf92632fcce362bb52592d63211c3
 
 
 ################################################################################
@@ -27,12 +27,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     gcc \
     git \
-    libicu70 \
+    libsdl2-2.0-0 \
     python3 \
     python3-pip \
     make \
     vim \
     wget
+
+# libicu70 \
 
 
 ################################################################################
@@ -42,9 +44,9 @@ RUN --mount=type=secret,id=_env,dst=/etc/secrets/.env \
     echo exit | steamcmd \
         "+login $(sed -n 1p /etc/secrets/.env) $(sed -n 2p /etc/secrets/.env)" \
         "+app_update 1281930 validate" &&\
-    ln -s /root/Steam/steamapps/ /root/.local/share/Steam/ &&\
     mkdir -p /root/.local/share/Terraria/tModLoader/ModSources &&\
     mkdir -p /root/.local/share/Terraria/tModLoader/Mods
+# ln -s /root/Steam/steamapps/ /root/.local/share/Steam/ &&\
 COPY tModLoader.targets /root/.local/share/Terraria/tModLoader/ModSources
 
 
@@ -79,14 +81,15 @@ ENV PATH "$PATH:/opt/riscv/bin"
 # Dotnet
 ################################################################################
 RUN wget https://dot.net/v1/dotnet-install.sh &&\
-    bash ./dotnet-install.sh --install-dir /usr/local/bin -channel STS -version 6.0.100 &&\
+    bash ./dotnet-install.sh --install-dir /usr/local/bin -channel 8.0 &&\
     dotnet --list-sdks
 
 
 ################################################################################
 # Riscof
 ################################################################################
-RUN pip3 install git+https://github.com/riscv/riscof.git
+# RUN pip3 install git+https://github.com/riscv/riscof.git
+RUN pip3 install --break-system-packages git+https://github.com/riscv/riscof.git
 # I should set this up to be built, right now it relies on host machine
 # already having it installed
 # This would require setting up ocaml as well as other build dependencies
