@@ -4,16 +4,42 @@
 # Copies world to/from game files
 #################################################
 
-case $1 in
-    -t|--to)
-        cp $(dirname "$0")/computer.wld ~/.local/share/Terraria/tModLoader/Worlds/computer.wld
-        cp $(dirname "$0")/computer.twld ~/.local/share/Terraria/tModLoader/Worlds/computer.twld
-        ;;
-    -f|--from)
-        cp ~/.local/share/Terraria/tModLoader/Worlds/computer.wld $(dirname "$0")
-        cp ~/.local/share/Terraria/tModLoader/Worlds/computer.twld $(dirname "$0")
-        ;;
-    *)
-        "Supply either --to or --from to copy either to or from the Terraria world files" 
-        ;;
-esac        
+TARGET_DIR="~/.local/share/Terraria/tModLoader/Worlds"
+TO_FLAG=0
+FROM_FLAG=0
+MNT_FLAG=0
+
+for arg in "$@"
+do
+    case $arg in
+        -t|--to)
+            TO_FLAG=1
+            ;;
+        -f|--from)
+            FROM_FLAG=1
+            ;;
+        --mnt)
+            MNT_FLAG=1
+            ;;
+        *)
+            echo "Invalid option: $arg"
+            echo "Supply either --to or --from and optionally --mnt to specify directory"
+            exit 1
+            ;;
+    esac
+done
+
+if [ "$MNT_FLAG" -eq 1 ]; then
+    TARGET_DIR="/mnt/d/computerraria"
+fi
+
+if [ "$TO_FLAG" -eq 1 ]; then
+    cp $(dirname "$0")/computer.wld "$TARGET_DIR"
+    cp $(dirname "$0")/computer.twld "$TARGET_DIR"
+elif [ "$FROM_FLAG" -eq 1 ]; then
+    cp "$TARGET_DIR/computer.wld" $(dirname "$0")
+    cp "$TARGET_DIR/computer.twld" $(dirname "$0")
+else
+    echo "Supply either --to or --from to copy either to or from the Terraria world files"
+    exit 1
+fi
