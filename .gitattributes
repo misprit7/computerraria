@@ -1,2 +1,4 @@
+*.wld filter=lfs diff=lfs merge=lfs -text
+*.twld filter=lfs diff=lfs merge=lfs -text
 . !text !filter !merge !diff
 * !text !filter !merge !diff
