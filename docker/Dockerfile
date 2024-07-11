@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y \
     libsdl2-2.0-0 \
     python3 \
     python3-pip \
+    python3-tqdm \
     make \
     vim \
     wget
