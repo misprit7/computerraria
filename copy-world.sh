@@ -4,7 +4,7 @@
 # Copies world to/from game files
 #################################################
 
-TARGET_DIR="~/.local/share/Terraria/tModLoader/Worlds"
+TARGET_DIR="$HOME/.local/share/Terraria/tModLoader/Worlds"
 TO_FLAG=0
 FROM_FLAG=0
 MNT_FLAG=0
@@ -34,11 +34,11 @@ if [ "$MNT_FLAG" -eq 1 ]; then
 fi
 
 if [ "$TO_FLAG" -eq 1 ]; then
-    cp $(dirname "$0")/computer.wld "$TARGET_DIR"
-    cp $(dirname "$0")/computer.twld "$TARGET_DIR"
+    cp $(dirname "$0")/computerraria.wld $TARGET_DIR
+    cp $(dirname "$0")/computerraria.twld $TARGET_DIR
 elif [ "$FROM_FLAG" -eq 1 ]; then
-    cp "$TARGET_DIR/computer.wld" $(dirname "$0")
-    cp "$TARGET_DIR/computer.twld" $(dirname "$0")
+    cp "$TARGET_DIR/computerraria.wld" $(dirname "$0")
+    cp "$TARGET_DIR/computerraria.twld" $(dirname "$0")
 else
     echo "Supply either --to or --from to copy either to or from the Terraria world files"
     exit 1
