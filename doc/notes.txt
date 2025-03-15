@@ -237,4 +237,8 @@ RAM/ROM
 47 rows
 24 rom, 23 ram
 
+ROM: 0x0-0x30000, i.e. 192kb
+RAM: 0x40000, 92kb
+
+
 
