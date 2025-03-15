@@ -104,7 +104,7 @@ class TServer:
             'clk': (3194, 153), # manual clock
             'reset': (3198, 156), # reset
             'zdb': (3243, 226), # zero data bus
-            'zmem': (3250, 374), # zero memory select
+            'zmem': (3404, 350), # zero memory select
             'lpc': (3198, 198), # store pc
             'rst': (3198, 156), # resets clock
         }
