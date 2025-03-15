@@ -34,11 +34,13 @@ if [ "$MNT_FLAG" -eq 1 ]; then
 fi
 
 if [ "$TO_FLAG" -eq 1 ]; then
+    tar -xzf $(dirname "$0")/computerraria.tar.gz -C $(dirname "$0")
     cp $(dirname "$0")/computerraria.wld $TARGET_DIR
     cp $(dirname "$0")/computerraria.twld $TARGET_DIR
 elif [ "$FROM_FLAG" -eq 1 ]; then
     cp "$TARGET_DIR/computerraria.wld" $(dirname "$0")
     cp "$TARGET_DIR/computerraria.twld" $(dirname "$0")
+    tar -czf $(dirname "$0")/computerraria.tar.gz $(dirname "$0")/computerraria.wld
 else
     echo "Supply either --to or --from to copy either to or from the Terraria world files"
     exit 1

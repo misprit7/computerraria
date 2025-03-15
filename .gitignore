@@ -1,3 +1,6 @@
+# Computerraria's world is very large (~400mb) but compresses very well. Since it's binary anyways I compress it so it's not stored directly
+computerraria.wld
+
 # Terraria world backups
 *.twld.bak
 *.wld.bak

@@ -233,3 +233,8 @@ ALU exec
 Store pc
 
 
+RAM/ROM
+47 rows
+24 rom, 23 ram
+
+
