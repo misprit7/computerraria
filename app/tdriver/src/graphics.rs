@@ -152,9 +152,9 @@ pub fn init() -> Screen {
 
 #[cfg(target_arch = "riscv32")] {
     Screen {
-        base_addr: 0x1E000 as *mut u32,
-        update_addr: 0x1E1FC as *mut u32,
-        input_addr: 0x1E1F8 as *mut u32,
+        base_addr: 0x20E000 as *mut u32,
+        update_addr: 0x20E1FC as *mut u32,
+        input_addr: 0x20E1F8 as *mut u32,
     }
 }
 

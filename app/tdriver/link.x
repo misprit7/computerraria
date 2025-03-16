@@ -1,9 +1,10 @@
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 64K
-  RAM (rwx) : ORIGIN = 0x000010000, LENGTH = 32K
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 768K
+  RAM (rwx) : ORIGIN = 0x00100000, LENGTH = 368K
   /* Memory mapped io */
-  SCREEN (w) : ORIGIN = 0x1E000, LENGTH = 8K
+  SCREEN (w) : ORIGIN = 0x00200000, LENGTH = 16K
+  BW_SCREEN (rw) : ORIGIN = 0x0020E000, LENGTH = 8K
 }
 
 /* The entry point is the reset handler */
