@@ -233,12 +233,22 @@ ALU exec
 Store pc
 
 
+# RAM/ROM Overhaul Notes
+
 RAM/ROM
 47 rows
 24 rom, 23 ram
 
-ROM: 0x0-0x30000, i.e. 192kb
-RAM: 0x40000, 92kb
+Screen: 176x96
+
+ROM: 0x0-0xC0000, i.e. 768kb
+RAM: 0x100000-0x15BFFF, i.e. 368kb
+Peripherals: starting at 0x200000
+Color screen: 0x200000
+Color update: 0x203FFC (end of of 0x204000 region)
+Old screen: 0x20E000
+Old screen update: 0x20E1FC
+Old screen input: 0x20E1F8
 
 
 
