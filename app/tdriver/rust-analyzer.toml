@@ -1,0 +1,2 @@
+[diagnostics]
+disabled = ["inactive-code"]

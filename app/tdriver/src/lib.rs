@@ -31,6 +31,13 @@ global_asm!("
 #[cfg(target_arch = "riscv32")]
 unsafe extern "C" fn Reset() -> ! {
 
+    // Occasionaly useful for debuggin, should write to screen
+    // If it doesn't then something is probably wrong with hardware
+    // let base_addr = 0x20E000 as *mut u32;
+    // let update_addr = 0x20E1FC as *mut u32;
+    // base_addr.write_volatile(0b11111111111110010011);
+    // update_addr.write_volatile(0b101);
+
     // Initialize RAM
     extern "C" {
         static mut _sbss: u8;
