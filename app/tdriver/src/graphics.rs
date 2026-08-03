@@ -16,6 +16,7 @@ use {
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
+    macroquad::prelude::*
 };
 
 /******************************************************************************
@@ -29,6 +30,12 @@ pub const HEIGHT: usize = 48;
 
 /// Width in number of 32 bit words that can fit horizontally
 pub const WORDS: usize = WIDTH / 32;
+
+/// Number of colored pixels in horizontal direction
+pub const C_WIDTH: usize = 176;
+/// Number of colored pixels in vertical direction
+pub const C_HEIGHT: usize = 96;
+
 
 /// Bitflag definitions for controller inputs
 pub mod input_flags {
@@ -65,9 +72,27 @@ pub struct Screen {
     input: u32,
 }
 
+pub struct CScreen {
+    #[cfg(target_arch = "riscv32")]
+    base_addr: *mut u32,
+    #[cfg(target_arch = "riscv32")]
+    update_addr: *mut u32,
+
+    #[cfg(not(target_arch = "riscv32"))]
+    sprite_grid: SpriteGrid,
+    #[cfg(not(target_arch = "riscv32"))]
+    state: [[u8; C_WIDTH]; C_HEIGHT],
+    #[cfg(not(target_arch = "riscv32"))]
+    tick_rate: Duration,
+    #[cfg(not(target_arch = "riscv32"))]
+    last_tick: Instant,
+    #[cfg(not(target_arch = "riscv32"))]
+    input: u32,
+}
+
 
 /******************************************************************************
- * x86 HAL
+ * x86 tui hardware abstraction layer
  ******************************************************************************/
 
 #[cfg(not(target_arch = "riscv32"))]
@@ -142,7 +167,107 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &[[bool; WIDTH]; HEIGHT]) {
 }
 
 /******************************************************************************
- * Public Functions
+ * x86 graphical hardware abstraction layer
+ ******************************************************************************/
+
+// Define our grid data structure
+struct SpriteGrid {
+    spritesheet: Texture2D,
+    sprite_size: u16,  // Size of each sprite in the spritesheet
+    tile_indices: Vec<usize>,  // Which sprite index to display at each grid position
+}
+
+impl SpriteGrid {
+    fn new() -> Self {
+        // Load the spritesheet texture
+        let spritesheet = Texture2D::from_file_with_format(
+            include_bytes!("/home/xander/.local/share/Terraria/tModLoader/ModSources/WireHead/Tiles/ColorPixelBox.png"),  // Include the image in the binary
+            None,  // Let macroquad detect the format
+        );
+
+        let sprite_size = 16;
+        
+        // Set texture filter to nearest for pixel art
+        spritesheet.set_filter(FilterMode::Nearest);
+        
+        // Initialize each grid cell with a random sprite index
+        let tile_count = C_WIDTH * C_HEIGHT;
+        let sprites_per_row = spritesheet.width() as u16 / sprite_size;
+        let sprites_per_col = spritesheet.height() as u16 / sprite_size;
+        let total_sprites = sprites_per_row * sprites_per_col;
+        
+        let mut tile_indices = Vec::with_capacity(tile_count);
+        for _ in 0..tile_count {
+            // Assign a random sprite index to each grid cell
+            let random_index = rand::gen_range(0, total_sprites as usize);
+            tile_indices.push(random_index);
+        }
+        
+        Self {
+            spritesheet,
+            sprite_size,
+            tile_indices,
+        }
+    }
+    
+    // Update a specific tile to use a different sprite
+    fn set_tile_sprite(&mut self, grid_x: usize, grid_y: usize, sprite_index: usize) {
+        if grid_x < C_WIDTH && grid_y < C_HEIGHT {
+            let index = grid_y * C_WIDTH + grid_x;
+            self.tile_indices[index] = sprite_index;
+        }
+    }
+    
+    // Draw the entire grid
+    fn draw(&self, screen_pos: Vec2) {
+        let sprites_per_row = (self.spritesheet.width() as u16 / self.sprite_size) as usize;
+        let cell_size = 100.;
+        
+        for y in 0..C_HEIGHT {
+            for x in 0..C_WIDTH {
+                let index = y * C_WIDTH + x;
+                let sprite_index = self.tile_indices[index];
+                
+                // Calculate spritesheet coordinates
+                let sprite_x = (sprite_index % sprites_per_row) as u16;
+                let sprite_y = (sprite_index / sprites_per_row) as u16;
+                
+                // Source rectangle from the spritesheet
+                let source = Rect::new(
+                    (sprite_x * self.sprite_size) as f32,
+                    (sprite_y * self.sprite_size) as f32,
+                    self.sprite_size as f32,
+                    self.sprite_size as f32,
+                );
+                
+                // Destination rectangle on the screen
+                let dest = Rect::new(
+                    screen_pos.x + (x as f32 * cell_size),
+                    screen_pos.y + (y as f32 * cell_size),
+                    cell_size,
+                    cell_size,
+                );
+                
+                // Draw the sprite
+                draw_texture_ex(
+                    self.spritesheet,
+                    dest.x,
+                    dest.y,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(dest.w, dest.h)),
+                        source: Some(source),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+    }
+}
+
+
+/******************************************************************************
+ * Screen Public Functions
  ******************************************************************************/
 
 /**
@@ -280,6 +405,36 @@ pub fn input(screen: &mut Screen) -> u32 {
 }}
 
 /******************************************************************************
+ * CScreen Public Functions
+ ******************************************************************************/
+
+pub fn colored_init() -> CScreen {
+
+#[cfg(target_arch = "riscv32")] {
+    CScreen {
+        base_addr: 0x200000 as *mut u32,
+        update_addr: 0x203FFC as *mut u32,
+    }
+}
+
+#[cfg(not(target_arch = "riscv32"))] {
+    let mut screen = CScreen { 
+        sprite_grid: SpriteGrid::new(),
+        state: [[0; C_WIDTH]; C_HEIGHT],
+        tick_rate: Duration::from_millis(
+            std::option_env!("EMU_TICK_RATE").unwrap_or("100").parse().unwrap()
+            // std::env!("EMU_TICK_RATE").parse().unwrap()
+            ),
+        last_tick: Instant::now(),
+        input: 0,
+    };
+
+    screen.sprite_grid.draw(vec2(0., 0.));
+
+    screen
+}}
+
+/******************************************************************************
  * Legacy Functions
  ******************************************************************************/
 
@@ -291,8 +446,8 @@ pub fn input(screen: &mut Screen) -> u32 {
  */
 #[cfg(target_arch = "riscv32")]
 pub fn sanity_check() {
-    let screen: *mut u32 = 0x1E000 as *mut u32;
-    let screen_write: *mut u32 = 0x1E1FC as *mut u32;
+    let screen: *mut u32 = 0x20E000 as *mut u32;
+    let screen_write: *mut u32 = 0x20E1FC as *mut u32;
     unsafe {
         for i in 0..96 {
             for j in 0..32 {

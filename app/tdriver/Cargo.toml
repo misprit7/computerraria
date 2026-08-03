@@ -14,5 +14,6 @@ lto = true
 
 [target.'cfg(not(target_arch = "riscv32"))'.dependencies]
 tui = { package = "ratatui", version = "0.20.1" }
+macroquad = "0.3"
 crossterm = "0.25"
 
